@@ -39,7 +39,7 @@ struct Vertex : public ListDigraph::Node
     }
     Vertex(int uid, double lon, double lat, ListDigraph::Node& n, int graphID) : uid_(uid), long_(lon), lat_(lat)
     {
-        std::cout << id << ", " << uid << std::endl;
+        // std::cout << id << ", " << uid << std::endl;
         id = uid;
         graphNode = n;
         graphID_ = graphID;
@@ -94,6 +94,7 @@ public:
 
     std::map<int, Vertex> vertices;
     std::vector<Edge> edges;
+    std::multimap<int, Edge> edgeLookUp;
     // VertexMap vertexMap;
     // ListDigraph::NodeMap<int> nmap;
     // ListDigraph::NodeMap<Vertex> nodeMap;
@@ -144,6 +145,7 @@ public:
                 
 
                 edges.push_back(Edge(std::stoi(row[1]), std::stoi(row[2]), std::stod(row[3])));
+                edgeLookUp.insert({std::stoi(row[1]), Edge(std::stoi(row[1]), std::stoi(row[2]), std::stod(row[3]))});
 
                 this->addArc(row);
                 // std::cout << "Edge: " << line << std::endl;
@@ -154,14 +156,14 @@ public:
         double center_latitude = sum_lat/vertices.size();
         double center_longitude = sum_long/vertices.size();
         
-        std::cout << "Center: " << center_latitude << center_longitude << std::endl;
-        for (const auto n: vertices)
-        {
-            cout << this->id((n.second.graphNode)) << endl;
-            std::cout << n.second << std::endl;
-        }
-        for (const auto e: edges)
-            std::cout << e << std::endl;
+        // std::cout << "Center: " << center_latitude << center_longitude << std::endl;
+        // for (const auto n: vertices)
+        // {
+        //     cout << this->id((n.second.graphNode)) << endl;
+        //     std::cout << n.second << std::endl;
+        // }
+        // for (const auto e: edges)
+        //     std::cout << e << std::endl;
 
         convertToCartesian(center_latitude, center_longitude);
         std::reverse(edges.begin(), edges.end());
@@ -204,6 +206,8 @@ public:
 
         vertices[fromID].adjacencyList_.push_back(vertices[toID]);
         vertices[fromID].adjacencyListIDs_.push_back(toID);
+
+        // TO SORT OR NOT TO SORT, THAT IS THE QUESTION
         std::sort(vertices[fromID].adjacencyListIDs_.begin(), vertices[fromID].adjacencyListIDs_.end());
 
 
@@ -237,37 +241,89 @@ public:
 
     // std::pair<int, int> 
 
-    void backtrace(std::map<int, int> parents, int start, int goal)
+    double getLength(int fromID, int toID){
+        for (auto it = edgeLookUp.lower_bound(fromID); it != edgeLookUp.upper_bound(fromID); it++)
+        {
+            if (it->second.toID_ == toID)
+                return it->second.length_;
+        }
+        return 0.0;
+
+    }
+
+    std::vector<std::pair<int, double>> backtrace(const std::map<int, int> &parents, int start, int goal)
     {
-        int prevNode = parents[goal];
+        int currentNode = goal;
+        int prevNode = parents.at(goal);
         std::vector<int> path{goal};
+
+        // std::cout << "\n \n " << getLength(prevNode, goal) << ", "<< getLength(parents.at(prevNode), prevNode) << std::endl;
+        // std::vector<std::pair<int, double>> path_{std::make_pair(goal, getLength(prevNode, goal)), std::make_pair(prevNode, getLength(parents.at(prevNode), prevNode))};
+        std::vector<std::pair<int, double>> path_;
+        
         // path.push_back(prevNode);
         while(prevNode != start)
         {
+            path_.push_back(std::make_pair(currentNode, getLength(prevNode, currentNode)));
+            // int tmp = currentNode;
+            currentNode = prevNode;
+            prevNode = parents.at(currentNode);
+
             path.push_back(prevNode);
-            prevNode = parents[prevNode];
+
+            // auto it = edgeLookUp.find(prevNode);
+            // int parent = parents.at(prevNode);
+            // cout << "Length from " << parent << " to " << prevNode << " has length of ";
+
+            // path_.push_back(std::make_pair(parent, getLength(parent, prevNode)));
+            // prevNode = parents.at(prevNode);
+
+            // for (auto it = edgeLookUp.lower_bound(parent); it != edgeLookUp.upper_bound(parent); it++)
+            // {
+            //     // cout << it->second << std::endl;
+            //     if (it->second.toID_ == prevNode)
+            //     {
+            //         path_.push_back(std::make_pair(parent, it->second.length_));
+            //         cout << it->second.length_ << endl;
+            //         break;
+            //     }
+            //         // cout << "found" << endl;
+            // }
+            // this->
         }
         path.push_back(prevNode);
+
+        path_.push_back(std::make_pair(currentNode, getLength(prevNode, currentNode)));
+        path_.push_back(std::make_pair(start,0));
+        // path_.push_back(std::make_pair(start, getLength(start, prevNode)));        
         
         std::reverse(path.begin(), path.end());
+        std::reverse(path_.begin(), path_.end());
+
+        return path_;
         int count = 0;
         for (auto node : path)
         {
             count++;
             cout << node << "," << endl;
+            
         }
         cout << endl;
         cout << count << endl;
 
+
     }
 
-    std::string bfs(Vertex start, Vertex goal){
+    std::vector<std::pair<int, double>> bfs(Vertex start, Vertex goal){
         int length;
         int numberOfVertices = 0;
 
         std::deque<int> active_queue;
         std::set<int> closed_set;
         std::map<int, int> parent;
+        
+        // <node ID, length until that node>
+        std::vector<std::pair<int, double>> path;
 
         // ID of the start vertex
         active_queue.push_back(start.uid_);
@@ -279,19 +335,10 @@ public:
             if (vcurrent == goal.uid_)
             {
                 int vprev;
-                cout << "Number of vertices visited: " << numberOfVertices << endl;
-                cout << "Closed set: " << closed_set.size() << endl;
+                cout << "Total visited vertex: " << numberOfVertices << endl;
+                // cout << "Closed set: " << closed_set.size() << endl;
 
-                backtrace(parent, start.uid_, goal.uid_);
-                
-                // trace back the path from the nodes of the closed set
-
-                // while(1)
-                // {
-                //     vprev = closed_set.find(vcurrent);
-                // }
-                
-                // return "Found node";
+                return backtrace(parent, start.uid_, goal.uid_);
             }
             // cout << "test";
             active_queue.pop_front();
@@ -308,8 +355,8 @@ public:
                 {
                     // cout << "Push back: " << vnext.uid_ << endl;
                     active_queue.push_back(vnext);
-                    if (vnext == 17796)
-                        cout << vcurrent << endl;
+                    // if (vnext == 17796)
+                    //     cout << vcurrent << endl;
                     parent[vnext] = vcurrent;
                 }
             }
@@ -321,11 +368,30 @@ public:
         // backtrace(parent, start.uid_, goal.uid_);
 
         cout << "Number of vertices visited: " << numberOfVertices << endl;
-        cout << "Closed set: " << closed_set.size() << endl;
-        return "";
+        // cout << "Closed set: " << closed_set.size() << endl;
+        
+        return path;
         // std::pair<int, int> result = std::make_pair(length, numberOfVertices);
         // return result;
+
     }
+
+
+    void printPath(std::vector<std::pair<int,double>> path){
+        int count = 1;
+        double accumulatedLength = 0;
+        std::cout << "Total vertex on path from start to end = " << path.size() << std::endl;
+        // std::cout.precision(3);
+        for (const auto node : path)
+        {
+            accumulatedLength += node.second;
+            // std::cout << accumulatedLength << " + " << node.second << std::endl;
+            std::cout << "Vertex[" << std::setw(4) << count << "]" << " = " << std::setw(8) << node.first << ", length = " << std::setw(12) << setprecision(2) << fixed << accumulatedLength << std::endl;
+            count++;
+        }
+    }
+
+    
 };
 
 
@@ -358,7 +424,8 @@ int main(int argc, char *argv[])
 
     cout << "Hello World! This is LEMON library here." << endl;
     cout << "We have a directed graph with " << countNodes(g) << " nodes "
-         << "and " << countArcs(g) << " arc." << endl;
+         << "and " << countArcs(g) << " arc.\n" << endl;
+
 
     // for (ListDigraph::NodeIt n(g); n!= INVALID; ++n)
     //     cout << g.id(n) << endl;
@@ -377,12 +444,14 @@ int main(int argc, char *argv[])
     // std::string result = g.bfs(g.vertices[0], g.vertices[13]);
     // for (auto v : g.vertices[86771].adjacencyList_)
     //     cout << v << endl;
-    std::string result = g.bfs(g.vertices[86771], g.vertices[110636]);
-    // std::string result = g.bfs(g.vertices[1], g.vertices[11]);
-    cout << result << std::endl;
+    auto path = g.bfs(g.vertices[86771], g.vertices[110636]);
 
-    for (const auto n : g.vertices[17779].adjacencyListIDs_)
-        cout << n << endl;
+    g.printPath(path);
+    // std::string result = g.bfs(g.vertices[1], g.vertices[11]);
+    // cout << result << std::endl;
+
+    // for (const auto n : g.vertices[17779].adjacencyListIDs_)
+    //     cout << n << endl;
 
     return 0;
 }
