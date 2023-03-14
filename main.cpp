@@ -54,7 +54,7 @@ struct Vertex : public ListDigraph::Node
 
     }
     friend std::ostream& operator<< (std::ostream& stream, const Vertex& node) {
-        return stream << "ID: " << node.uid_ << ", Lat: " << node.lat_ << ", Long: " << node.long_;
+        return stream << "ID: " << node.uid_ << ", weight: " << node.weight_;
     }
 
     void setID(int newID){
@@ -443,9 +443,9 @@ public:
         // return result;
     }
 
-    std::vector<pair<int, double>> backtrace_dijkstra(const std::map<int, Vertex> &parents, Vertex &start, Vertex &goal){
+    std::vector<pair<int, double>> backtrace_dijkstra(const std::map<int, Vertex*> &parents, Vertex &start, Vertex &goal){
         Vertex currentNode = goal;
-        Vertex prevNode = parents.at(vertices[goal.uid_].uid_);
+        Vertex prevNode = *parents.at(vertices[goal.uid_].uid_);
         std::vector<int> path{goal.uid_};
         std::vector<std::pair<int, double>> path_;
         
@@ -453,7 +453,7 @@ public:
         {
             path_.push_back(std::make_pair(currentNode.uid_, getLength(prevNode.uid_, currentNode.uid_)));
             currentNode = prevNode;
-            prevNode = parents.at(currentNode.uid_);
+            prevNode = *parents.at(currentNode.uid_);
 
             path.push_back(prevNode.uid_);
         }
@@ -469,22 +469,23 @@ public:
         int length;
         int numberOfVertices = 0;
         std::map<int, Vertex> *v = &vertices;
-        auto mycompare = [v](Vertex a, Vertex b) -> bool {
+        auto mycompare = [v](Vertex* a, Vertex* b) -> bool {
             // cout <<  v.at(b).weight_ << " <  " << v.at(a).weight_ << endl;
             // return v->at(b).weight_ > v->at(a).weight_;
-            return b.weight_ > a.weight_;
+            return b->weight_ > a->weight_;
             // return b < a;
         };
 
-        std::deque<Vertex> active_queue;
-        std::set<Vertex> closed_set;
+        std::deque<Vertex*> active_queue;
+        std::set<Vertex*> closed_set;
         // std::vector<int> closed_set;
-        std::map<int, Vertex> parent;
+        std::map<int, Vertex*> parent;
         
         // <node ID, length until that node>
         std::vector<std::pair<int, double>> path;
 
-        active_queue.emplace_back(start);
+        // TODO: Emplace reference/ pointer and not a copy...
+        active_queue.emplace_back(&start);
         start.set_weight(0);
         cout << "Test" << endl;
         
@@ -492,7 +493,7 @@ public:
         {
             
 
-            Vertex vcurrent = active_queue.front(); 
+            Vertex vcurrent = *active_queue.front();
             // path.push_back(std::make_pair(vcurrent, 1.0));
             // std::cout << "Vertex [ " << numberOfVertices << "] = " << vcurrent <<  ", goal: " << goal.uid_ << std::endl;
             // cout << "current node: " << vcurrent << endl;
@@ -506,36 +507,43 @@ public:
             }
             active_queue.pop_front();
             // closed_set.insert(closed_set.begin(), vcurrent);
-            closed_set.insert(vcurrent);
+            closed_set.insert(&vcurrent);
             numberOfVertices++;
             // for (auto c : active_queue)
             //     cout << "active: " << c << endl;
             // for (auto c : closed_set)
             //     cout << "closed: "  << c << endl;
-
+            if (numberOfVertices > 20)
+                break;
             int newVerticesCount = 0;
             // auto start = chrono::high_resolution_clock::now();
             
-            // auto starttime = chrono::high_resolution_clock::now();
+            auto starttime = chrono::high_resolution_clock::now();
             for (auto vnext :vcurrent.adjacencyListIDs_)
             {
                 // cout << "vnext " << vnext << endl;
                 // if (std::find(closed_set.begin(), closed_set.end(), vnext) != closed_set.end())
-                if (closed_set.find(vertices[vnext]) != closed_set.end())
+                if (closed_set.find(&vertices[vnext]) != closed_set.end())
                 {
                     // cout << "found " << vnext << endl;
                     continue;
                 }
                 // auto start = chrono::high_resolution_clock::now();
                 auto w = vcurrent.get_weight() + get_edge_weight(vcurrent.uid_, vnext);
-                if (std::find(active_queue.begin(), active_queue.end(), vertices[vnext]) == active_queue.end())
+                cout << vcurrent << endl;
+                if (std::find(*active_queue.begin(), *active_queue.end(), vertices[vnext]) == *active_queue.end())
                 {
+                    // cout << w << endl;
                     vertices[vnext].set_weight(w);
-                    active_queue.emplace_back(vertices[vnext]);
-                    parent[vnext] = vcurrent;
+                    active_queue.emplace_back(&vertices[vnext]);
+                    parent[vnext] = &vcurrent;
                     newVerticesCount++;
                 }
                 else if (w < vertices[vnext].get_weight()){
+                    cout << "else if " << vertices[vnext] << endl;
+                    // std::find(active_queue.begin(), active_queue.end(), vertices[vnext])->set_weight(w);
+
+                    // is not the same vertex anymore as the one in the active queue
                     vertices[vnext].set_weight(w);
                 }
             }
@@ -562,6 +570,91 @@ public:
         }
         cout << "Number of vertices visited: " << numberOfVertices << endl;
     }
+
+
+
+     std::vector<pair<int, double>> backtrace_dijkstra_V2(const std::map<int,int> &parents, int start, int goal){
+        int currentNode = goal;
+        int prevNode = parents.at(goal);
+        std::vector<std::pair<int, double>> path_;
+        
+        while(prevNode != start)
+        {
+            path_.push_back(std::make_pair(currentNode, getLength(prevNode, currentNode)));
+            currentNode = prevNode;
+            prevNode = parents.at(currentNode);
+        }
+        path_.push_back(std::make_pair(currentNode, getLength(prevNode, currentNode)));
+        path_.push_back(std::make_pair(start,0));
+
+        std::reverse(path_.begin(), path_.end());
+
+        return path_;
+    }
+
+
+    std::vector<pair<int, double>> dijkstraV2(int start, int goal){
+        std::deque<int> active_queue;
+        std::set<int> closed_set;
+        std::map<int, int> parent;
+        int numberOfVertices = 0;
+
+        auto mycompare = [this](int a, int b) -> bool {
+            return this->vertices.at(b).weight_ > this->vertices.at(a).weight_;
+        };
+
+        vertices[start].set_weight(0);
+        active_queue.push_back(start);
+        
+        while (active_queue.size() != 0)
+        {
+            int vcurrent = active_queue.front();
+            
+            if (vcurrent == goal)
+            {
+                cout << "Total visited vertex: " << numberOfVertices << endl;
+                return backtrace_dijkstra_V2(parent, start, goal);
+            }
+
+            active_queue.pop_front();
+            closed_set.insert(vcurrent);
+            numberOfVertices++;
+            
+            if (numberOfVertices > 20)
+                break;
+                            
+            auto starttime = chrono::high_resolution_clock::now();
+
+            int newVerticesCount = 0;
+
+            for (auto vnext :vertices[vcurrent].adjacencyListIDs_)
+            {
+                if (closed_set.find(vnext) != closed_set.end())
+                {
+                    continue;
+                }
+                auto w = vertices[vcurrent].get_weight() + get_edge_weight(vcurrent, vnext);
+
+                cout << vertices[vcurrent] << endl;
+
+                if (std::find(active_queue.begin(), active_queue.end(), vnext) == active_queue.end())
+                {
+                    vertices[vnext].set_weight(w);
+                    active_queue.emplace_back(vnext);
+                    parent[vnext] = vcurrent;
+                    newVerticesCount++;
+                }
+                else if (w < vertices[vnext].get_weight()){
+                    cout << "else " << vertices[vnext] << endl;
+                    vertices[vnext].set_weight(w);
+                }
+            }
+            std::partial_sort(active_queue.begin(), active_queue.begin()+newVerticesCount, active_queue.end(), mycompare);
+
+        }
+        cout << "Number of vertices visited: " << numberOfVertices << endl;
+    }
+
     
 
     void printPath(std::vector<std::pair<int,double>> path){
@@ -601,13 +694,15 @@ int main(int argc, char *argv[])
     g.printPath(path);
     // auto path = g.bfs(g.vertices[86771], g.vertices[110636]);
 
-    path = g.dijkstra(g.vertices[86771], g.vertices[110636]);
+    // path = g.dijkstra(g.vertices[86771], g.vertices[24989]);
+    // g.printPath(path);
+    path = g.dijkstraV2(86771, 110636);
+    g.printPath(path);
 
     // auto path = g.bfs(g.vertices[0], g.vertices[6]);
 
     // g.printPath(path);
     // path = g.dijkstra(g.vertices[0].uid_, g.vertices[6].uid_);
-    g.printPath(path);
 
     // for (const auto n : g.vertices[17779].adjacencyListIDs_)
     //     cout << n << endl;
