@@ -11,10 +11,14 @@
 #include <deque>
 #include <set>
 
+#include <chrono>
+
+
 
 #include <lemon/list_graph.h>
 
 #define R0 6378137
+#define MAX_VERTEX_WEIGHT 100000000.0
 // #define 
 
 using namespace lemon;
@@ -29,15 +33,17 @@ struct Vertex : public ListDigraph::Node
     double lat_;
     double x_;
     double y_;
+    double weight_;
     std::vector<Vertex> adjacencyList_;
     std::vector<int> adjacencyListIDs_;
+    std::vector<Vertex*> adjacencyListLinked_;
 
 
     // DEFAULT CONSTRUCTOR IS NEEDED FOR NODE MAP
     Vertex() {
         // std::cout << id << std::endl;
     }
-    Vertex(int uid, double lon, double lat, ListDigraph::Node& n, int graphID) : uid_(uid), long_(lon), lat_(lat)
+    Vertex(int uid, double lon, double lat, ListDigraph::Node& n, int graphID) : uid_(uid), long_(lon), lat_(lat), weight_(MAX_VERTEX_WEIGHT)
     {
         // std::cout << id << ", " << uid << std::endl;
         id = uid;
@@ -54,6 +60,19 @@ struct Vertex : public ListDigraph::Node
     void setID(int newID){
         id = newID;
     }
+
+    double get_weight(){
+        return weight_;
+    }
+
+    void set_weight(double weight){
+        weight_ = weight;
+    }
+
+    friend bool operator==(const Vertex& lhs, const Vertex& rhs)
+    {
+        return lhs.uid_ == rhs.uid_;
+    }
 };
 
 // struct VertexMap : public ListDigraph::NodeMap<Vertex>{
@@ -69,11 +88,12 @@ struct Edge : public ListDigraph::Arc
     int fromID_;
     int toID_;
     double length_;
+    double weight_;
 
     // DEFAULT CONSTRUCTOR IS NEEDED FOR NODE MAP :: deprecated
     Edge() {}
     // Edge(Vertex from, Vertex to) : from_(from), to_(to) {}
-    Edge(int from, int to, double length) : fromID_(from), toID_(to), length_(length) {}
+    Edge(int from, int to, double length, double weight) : fromID_(from), toID_(to), length_(length), weight_(weight) {}
 
     friend std::ostream& operator<< (std::ostream& stream, const Edge& edge) {
         return stream << "From Vertex: " << edge.fromID_ << ", to Vertex: " << edge.toID_ << ", length: " << edge.length_;
@@ -144,8 +164,8 @@ public:
                     row.push_back(element);
                 
 
-                edges.push_back(Edge(std::stoi(row[1]), std::stoi(row[2]), std::stod(row[3])));
-                edgeLookUp.insert({std::stoi(row[1]), Edge(std::stoi(row[1]), std::stoi(row[2]), std::stod(row[3]))});
+                // edges.push_back(Edge(std::stoi(row[1]), std::stoi(row[2]), std::stod(row[3])));
+                
 
                 this->addArc(row);
                 // std::cout << "Edge: " << line << std::endl;
@@ -181,6 +201,22 @@ public:
             v.second.x_ = R0 * cos(centerLatRad) * (longRad-centerLongRad);
             v.second.y_ = R0 * log(tan(((latRad-centerLatRad)/2) + (M_PI/4)));
         }
+        int fromID;
+        int toID;
+        double weight;
+        for (auto &edge : edgeLookUp)
+        {
+            fromID = edge.second.fromID_;
+            toID = edge.second.toID_;
+            
+            double x_term = pow((vertices[fromID].x_ - vertices[toID].x_), 2);
+            // cout << "xterm " << x_term << endl;
+            double y_term = pow((vertices[fromID].y_ - vertices[toID].y_), 2);
+
+            double weight = sqrt(x_term+y_term);
+            edge.second.weight_ = weight;
+            // cout << "weight " << edge.second.weight_ << endl;
+        }
 
     }
     // using ListDigraph::addNode;
@@ -200,17 +236,29 @@ public:
         // ListDigraph::Node v = nodeFromId(std::stoi(row[2]));
         int fromID = std::stoi(row[1]);
         int toID = std::stoi(row[2]);
+        double length = std::stod(row[3]);
+
+        double x_term = pow((vertices[fromID].x_ - vertices[toID].x_), 2);
+        // cout << "xterm " << x_term << endl;
+        double y_term = pow((vertices[fromID].y_ - vertices[toID].y_), 2);
+
+        double weight = sqrt(x_term+y_term);
+
 
         ListDigraph::Node u = vertices[fromID].graphNode;
         ListDigraph::Node v = vertices[toID].graphNode;
 
         vertices[fromID].adjacencyList_.push_back(vertices[toID]);
         vertices[fromID].adjacencyListIDs_.push_back(toID);
+        vertices[fromID].adjacencyListLinked_.push_back(&vertices[toID]);
+
 
         // TO SORT OR NOT TO SORT, THAT IS THE QUESTION
         std::sort(vertices[fromID].adjacencyListIDs_.begin(), vertices[fromID].adjacencyListIDs_.end());
 
-
+        edgeLookUp.insert({std::stoi(row[1]), Edge(fromID, toID, length, weight)});
+        // cout << "weight: " << weight << endl;
+        // edgeLookUp.insert({std::stoi(row[1]), Edge(fromID, toID, length, std::stod(row[5]))});
         return this->addArc(u, v);
     }
 
@@ -241,6 +289,27 @@ public:
 
     // std::pair<int, int> 
 
+    double get_edge_weight(int fromID, int toID){
+        // auto start = chrono::high_resolution_clock::now();
+        // int count=0;
+        for (auto it = edgeLookUp.lower_bound(fromID); it != edgeLookUp.upper_bound(fromID); it++)
+        {
+            // count++;
+            // cout << "coutn ; " << count <<endl;
+            if (it->second.toID_ == toID)
+            {
+                    // auto stop = chrono::high_resolution_clock::now();
+
+                // auto duration = chrono::duration_cast<chrono::microseconds>(stop - start);
+                // cout << duration.count() << endl;
+                return it->second.weight_;
+            }
+        }
+
+        
+        return MAX_VERTEX_WEIGHT;
+    }
+
     double getLength(int fromID, int toID){
         for (auto it = edgeLookUp.lower_bound(fromID); it != edgeLookUp.upper_bound(fromID); it++)
         {
@@ -248,7 +317,6 @@ public:
                 return it->second.length_;
         }
         return 0.0;
-
     }
 
     std::vector<std::pair<int, double>> backtrace(const std::map<int, int> &parents, int start, int goal)
@@ -330,6 +398,7 @@ public:
 
         while (active_queue.size() != 0)
         {
+
             int vcurrent = active_queue.front(); 
             // std::cout << "Vertex [ " << numberOfVertices << "] = " << vcurrent <<  ", goal: " << goal.uid_ << std::endl;
             if (vcurrent == goal.uid_)
@@ -361,7 +430,6 @@ public:
                 }
             }
             
-            // if (numberOfVertices > 28)
             //     return "";
         } 
 
@@ -373,9 +441,128 @@ public:
         return path;
         // std::pair<int, int> result = std::make_pair(length, numberOfVertices);
         // return result;
-
     }
 
+    std::vector<pair<int, double>> backtrace_dijkstra(const std::map<int, Vertex> &parents, Vertex &start, Vertex &goal){
+        Vertex currentNode = goal;
+        Vertex prevNode = parents.at(vertices[goal.uid_].uid_);
+        std::vector<int> path{goal.uid_};
+        std::vector<std::pair<int, double>> path_;
+        
+        while(prevNode != start)
+        {
+            path_.push_back(std::make_pair(currentNode.uid_, getLength(prevNode.uid_, currentNode.uid_)));
+            currentNode = prevNode;
+            prevNode = parents.at(currentNode.uid_);
+
+            path.push_back(prevNode.uid_);
+        }
+        path_.push_back(std::make_pair(currentNode.uid_, getLength(prevNode.uid_, currentNode.uid_)));
+        path_.push_back(std::make_pair(start.uid_,0));
+
+        std::reverse(path_.begin(), path_.end());
+
+        return path_;
+    }
+
+    std::vector<pair<int, double>> dijkstra(Vertex &start, Vertex &goal){
+        int length;
+        int numberOfVertices = 0;
+        std::map<int, Vertex> *v = &vertices;
+        auto mycompare = [v](Vertex a, Vertex b) -> bool {
+            // cout <<  v.at(b).weight_ << " <  " << v.at(a).weight_ << endl;
+            // return v->at(b).weight_ > v->at(a).weight_;
+            return b.weight_ > a.weight_;
+            // return b < a;
+        };
+
+        std::deque<Vertex> active_queue;
+        std::set<Vertex> closed_set;
+        // std::vector<int> closed_set;
+        std::map<int, Vertex> parent;
+        
+        // <node ID, length until that node>
+        std::vector<std::pair<int, double>> path;
+
+        active_queue.emplace_back(start);
+        start.set_weight(0);
+        cout << "Test" << endl;
+        
+        while (active_queue.size() != 0)
+        {
+            
+
+            Vertex vcurrent = active_queue.front(); 
+            // path.push_back(std::make_pair(vcurrent, 1.0));
+            // std::cout << "Vertex [ " << numberOfVertices << "] = " << vcurrent <<  ", goal: " << goal.uid_ << std::endl;
+            // cout << "current node: " << vcurrent << endl;
+            if (vcurrent == goal)
+            {
+                cout << "Total visited vertex: " << numberOfVertices << endl;
+                // for (auto node : path)
+                //     std::cout << node.first << std::endl;
+                // return backtrace(parent, start, goal);
+                return backtrace_dijkstra(parent, start, goal);
+            }
+            active_queue.pop_front();
+            // closed_set.insert(closed_set.begin(), vcurrent);
+            closed_set.insert(vcurrent);
+            numberOfVertices++;
+            // for (auto c : active_queue)
+            //     cout << "active: " << c << endl;
+            // for (auto c : closed_set)
+            //     cout << "closed: "  << c << endl;
+
+            int newVerticesCount = 0;
+            // auto start = chrono::high_resolution_clock::now();
+            
+            // auto starttime = chrono::high_resolution_clock::now();
+            for (auto vnext :vcurrent.adjacencyListIDs_)
+            {
+                // cout << "vnext " << vnext << endl;
+                // if (std::find(closed_set.begin(), closed_set.end(), vnext) != closed_set.end())
+                if (closed_set.find(vertices[vnext]) != closed_set.end())
+                {
+                    // cout << "found " << vnext << endl;
+                    continue;
+                }
+                // auto start = chrono::high_resolution_clock::now();
+                auto w = vcurrent.get_weight() + get_edge_weight(vcurrent.uid_, vnext);
+                if (std::find(active_queue.begin(), active_queue.end(), vertices[vnext]) == active_queue.end())
+                {
+                    vertices[vnext].set_weight(w);
+                    active_queue.emplace_back(vertices[vnext]);
+                    parent[vnext] = vcurrent;
+                    newVerticesCount++;
+                }
+                else if (w < vertices[vnext].get_weight()){
+                    vertices[vnext].set_weight(w);
+                }
+            }
+
+            // std::partial_sort(active_queue.begin(), active_queue.begin(), active_queue.end());
+            
+
+            // cout << "Presorted: " << endl;
+            // for (auto node : active_queue)
+            //     cout << node << endl;
+                        // auto start = chrono::high_resolution_clock::now();
+
+            std::partial_sort(active_queue.begin(), active_queue.begin()+newVerticesCount, active_queue.end(), mycompare);
+
+            // std::sort(active_queue.begin(), active_queue.end(), mycompare);
+            // cout << "Postsorted: " << endl;
+            // for (auto node : active_queue)
+            //     cout << node << endl;
+            // auto stop = chrono::high_resolution_clock::now();
+
+            // auto duration = chrono::duration_cast<chrono::microseconds>(stop - starttime);
+            // cout << "time: " << duration.count() << endl;
+            // if (numberOfVertices > 28)
+        }
+        cout << "Number of vertices visited: " << numberOfVertices << endl;
+    }
+    
 
     void printPath(std::vector<std::pair<int,double>> path){
         int count = 1;
@@ -405,50 +592,22 @@ int main(int argc, char *argv[])
     Graph g(argv[1]);
 
     ListDigraph::NodeMap<Vertex> nodeMap(g);
-    
-    
-    // graph.ListDigraph::addNode();
-
-    // ListDigraph g;
-    // ListDigraph::Node u = g.addNode();
-    // ListDigraph::Node v = g.addNode();
-    // ListDigraph::Arc a = g.addArc(u, v);
-    // ListDigraph::NodeMap<Vertex> nodeMap(g);
-    // ListDigraph::ArcMap<std::string> arcMap(g);
-    // nodeMap[u] = Vertex(1, 2.0, 3.0);
-    // nodeMap[v] = Vertex(5, 2.0, 3.0);
-
-
-    //   nodeMap[v] = "2";
-    //   arcMap[a] = "3";
 
     cout << "Hello World! This is LEMON library here." << endl;
     cout << "We have a directed graph with " << countNodes(g) << " nodes "
          << "and " << countArcs(g) << " arc.\n" << endl;
 
-
-    // for (ListDigraph::NodeIt n(g); n!= INVALID; ++n)
-    //     cout << g.id(n) << endl;
-    
-    // for (std::map<int, Vertex>::iterator it = g.vertices.begin(); it != g.vertices.end(); it++)
-    // {
-    //     cout << it->first << ", x: " << it->second.x_ << ", y: " << it->second.y_ << endl;
-    //     cout << "GraphNode id is: " << g.id((it->second.graphNode)) << ", " << it->second.graphID_ << endl;
-    //     cout << "Adjacency list of node " << it->second.uid_ << ": ";
-    //     for (const auto node : it->second.adjacencyList_)
-    //         // cout <<  g.id((node.graphNode)) << "(" << node.graphID_ << ")" << ", ";
-    //         cout <<  node.uid_ << "(" << node.graphID_ << ")" << ", ";
-    //     cout << endl;
-    // }
-
-    // std::string result = g.bfs(g.vertices[0], g.vertices[13]);
-    // for (auto v : g.vertices[86771].adjacencyList_)
-    //     cout << v << endl;
-    auto path = g.bfs(g.vertices[86771], g.vertices[110636]);
-
+    auto path = g.bfs(g.vertices[86771], g.vertices[24989]);
     g.printPath(path);
-    // std::string result = g.bfs(g.vertices[1], g.vertices[11]);
-    // cout << result << std::endl;
+    // auto path = g.bfs(g.vertices[86771], g.vertices[110636]);
+
+    path = g.dijkstra(g.vertices[86771], g.vertices[110636]);
+
+    // auto path = g.bfs(g.vertices[0], g.vertices[6]);
+
+    // g.printPath(path);
+    // path = g.dijkstra(g.vertices[0].uid_, g.vertices[6].uid_);
+    g.printPath(path);
 
     // for (const auto n : g.vertices[17779].adjacencyListIDs_)
     //     cout << n << endl;
