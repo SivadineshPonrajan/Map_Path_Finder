@@ -214,7 +214,7 @@ public:
             double y_term = pow((vertices[fromID].y_ - vertices[toID].y_), 2);
 
             double weight = sqrt(x_term+y_term);
-            edge.second.weight_ = weight;
+            // edge.second.weight_ = weight;
             // cout << "weight " << edge.second.weight_ << endl;
         }
 
@@ -228,6 +228,8 @@ public:
     //     return this->addNode();
     // }
 
+
+    // TODO: REMOVE LENGTH
     using ListDigraph::addArc;
     ListDigraph::Arc addArc(std::vector<std::string> row){
         // std::stoi(row[1]), std::stoi(row[2]),
@@ -302,7 +304,7 @@ public:
 
                 // auto duration = chrono::duration_cast<chrono::microseconds>(stop - start);
                 // cout << duration.count() << endl;
-                return it->second.weight_;
+                return it->second.length_;
             }
         }
 
@@ -620,8 +622,8 @@ public:
             closed_set.insert(vcurrent);
             numberOfVertices++;
             
-            if (numberOfVertices > 20)
-                break;
+            // if (numberOfVertices > 20)
+            //     break;
                             
             auto starttime = chrono::high_resolution_clock::now();
 
@@ -635,7 +637,11 @@ public:
                 }
                 auto w = vertices[vcurrent].get_weight() + get_edge_weight(vcurrent, vnext);
 
-                cout << vertices[vcurrent] << endl;
+                // cout << vertices[vcurrent] << endl;
+                if (vnext==21358)
+                {
+                    cout << vertices[vcurrent] << endl;
+                }
 
                 if (std::find(active_queue.begin(), active_queue.end(), vnext) == active_queue.end())
                 {
@@ -645,12 +651,15 @@ public:
                     newVerticesCount++;
                 }
                 else if (w < vertices[vnext].get_weight()){
-                    cout << "else " << vertices[vnext] << endl;
+                    // cout << "parent: " << parent[vnext] << " child " << vcurrent << endl;
+
+                    // cout << "else " << vertices[vnext] << endl;
+                    parent[vnext] = vcurrent;
                     vertices[vnext].set_weight(w);
                 }
             }
-            std::partial_sort(active_queue.begin(), active_queue.begin()+newVerticesCount, active_queue.end(), mycompare);
-
+            // std::partial_sort(active_queue.begin(), active_queue.begin()+newVerticesCount, active_queue.end(), mycompare);
+            std::sort(active_queue.begin(),  active_queue.end(), mycompare);
         }
         cout << "Number of vertices visited: " << numberOfVertices << endl;
     }
