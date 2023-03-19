@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <iterator>
 #include <math.h>
+#include <float.h>
 
 #include <queue>
 #include <deque>
@@ -18,7 +19,7 @@
 #include <lemon/list_graph.h>
 
 #define R0 6378137
-#define MAX_VERTEX_WEIGHT 100000000.0
+#define MAX_VERTEX_WEIGHT DBL_MAX
 // #define 
 
 using namespace lemon;
@@ -34,6 +35,7 @@ struct Vertex : public ListDigraph::Node
     double x_;
     double y_;
     double weight_;
+    double estimate_;
     std::vector<Vertex> adjacencyList_;
     std::vector<int> adjacencyListIDs_;
     std::vector<Vertex*> adjacencyListLinked_;
@@ -43,7 +45,7 @@ struct Vertex : public ListDigraph::Node
     Vertex() {
         // std::cout << id << std::endl;
     }
-    Vertex(int uid, double lon, double lat, ListDigraph::Node& n, int graphID) : uid_(uid), long_(lon), lat_(lat), weight_(MAX_VERTEX_WEIGHT)
+    Vertex(int uid, double lon, double lat, ListDigraph::Node& n, int graphID) : uid_(uid), long_(lon), lat_(lat), weight_(MAX_VERTEX_WEIGHT), estimate_(DBL_MAX)
     {
         // std::cout << id << ", " << uid << std::endl;
         id = uid;
@@ -67,6 +69,14 @@ struct Vertex : public ListDigraph::Node
 
     void set_weight(double weight){
         weight_ = weight;
+    }
+
+    double get_estimate(){
+        return estimate_;
+    }
+    
+    void set_estimate(double estimate){
+        estimate_ = estimate;
     }
 
     friend bool operator==(const Vertex& lhs, const Vertex& rhs)
@@ -384,7 +394,7 @@ public:
 
     }
 
-    std::vector<std::pair<int, double>> bfs(Vertex start, Vertex goal){
+    std::vector<std::pair<int, double>> bfs(int start, int goal){
         int length;
         int numberOfVertices = 0;
 
@@ -396,20 +406,20 @@ public:
         std::vector<std::pair<int, double>> path;
 
         // ID of the start vertex
-        active_queue.push_back(start.uid_);
+        active_queue.push_back(start);
 
         while (active_queue.size() != 0)
         {
 
             int vcurrent = active_queue.front(); 
             // std::cout << "Vertex [ " << numberOfVertices << "] = " << vcurrent <<  ", goal: " << goal.uid_ << std::endl;
-            if (vcurrent == goal.uid_)
+            if (vcurrent == goal)
             {
                 int vprev;
                 cout << "Total visited vertex: " << numberOfVertices << endl;
                 // cout << "Closed set: " << closed_set.size() << endl;
 
-                return backtrace(parent, start.uid_, goal.uid_);
+                return backtrace(parent, start, goal);
             }
             // cout << "test";
             active_queue.pop_front();
@@ -662,6 +672,88 @@ public:
             std::sort(active_queue.begin(),  active_queue.end(), mycompare);
         }
         cout << "Number of vertices visited: " << numberOfVertices << endl;
+
+        return std::vector<std::pair<int, double>>{};
+    }
+
+    double heuristic_distance_estimator(int fromID, int toID){
+        double x_term = pow((vertices[fromID].x_ - vertices[toID].x_), 2);
+        // cout << "xterm " << x_term << endl;
+        double y_term = pow((vertices[fromID].y_ - vertices[toID].y_), 2);
+
+        double heuristic = sqrt(x_term+y_term);
+
+        return heuristic;
+    }
+
+    std::vector<std::pair<int, double>> astar(int start, int goal){
+        std::deque<int> active_queue;
+        std::set<int> closed_set;
+        std::map<int, int> parent;
+        int numberOfVertices = 0;
+
+        auto mycompare = [this](int a, int b) -> bool {
+            return this->vertices.at(b).estimate_ > this->vertices.at(a).estimate_;
+        };
+
+        vertices[start].set_weight(0);
+        active_queue.push_back(start);
+        
+        while (active_queue.size() != 0)
+        {
+            int vcurrent = active_queue.front();
+            
+            if (vcurrent == goal)
+            {
+                cout << "Total visited vertex: " << numberOfVertices << endl;
+                return backtrace_dijkstra_V2(parent, start, goal);
+            }
+
+            active_queue.pop_front();
+            closed_set.insert(vcurrent);
+            numberOfVertices++;
+            
+            // if (numberOfVertices > 20)
+            //     break;
+                            
+            auto starttime = chrono::high_resolution_clock::now();
+
+            int newVerticesCount = 0;
+
+            for (auto vnext :vertices[vcurrent].adjacencyListIDs_)
+            {
+                if (closed_set.find(vnext) != closed_set.end())
+                {
+                    continue;
+                }
+                auto g = vertices[vcurrent].get_weight() + get_edge_weight(vcurrent, vnext);
+                auto f = g + heuristic_distance_estimator(vnext, goal);
+
+                if (std::find(active_queue.begin(), active_queue.end(), vnext) == active_queue.end())
+                {
+                    vertices[vnext].set_weight(g);
+                    vertices[vnext].set_estimate(f);
+                    active_queue.emplace_back(vnext);
+                    parent[vnext] = vcurrent;
+
+                    // count the number of vertices that are pushed into the active_queue for the partial sort
+                    newVerticesCount++;
+                }
+                else if (f < vertices[vnext].get_estimate()){
+                    // cout << "parent: " << parent[vnext] << " child " << vcurrent << endl;
+
+                    // cout << "else " << vertices[vnext] << endl;
+                    parent[vnext] = vcurrent;
+                    vertices[vnext].set_weight(g);
+                    vertices[vnext].set_estimate(f);
+                }
+            }
+            // std::partial_sort(active_queue.begin(), active_queue.begin()+newVerticesCount, active_queue.end(), mycompare);
+            std::sort(active_queue.begin(),  active_queue.end(), mycompare);
+        }
+        cout << "Number of vertices visited: " << numberOfVertices << endl;
+
+        return std::vector<std::pair<int, double>>{};
     }
 
     
@@ -699,13 +791,16 @@ int main(int argc, char *argv[])
     cout << "We have a directed graph with " << countNodes(g) << " nodes "
          << "and " << countArcs(g) << " arc.\n" << endl;
 
-    auto path = g.bfs(g.vertices[86771], g.vertices[24989]);
+    auto path = g.bfs(86771, 110636);
     g.printPath(path);
     // auto path = g.bfs(g.vertices[86771], g.vertices[110636]);
 
     // path = g.dijkstra(g.vertices[86771], g.vertices[24989]);
     // g.printPath(path);
     path = g.dijkstraV2(86771, 110636);
+    g.printPath(path);
+
+    path = g.astar(86771, 110636);
     g.printPath(path);
 
     // auto path = g.bfs(g.vertices[0], g.vertices[6]);
