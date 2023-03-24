@@ -1,6 +1,7 @@
 // Copyright (C) 2016 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 
+#include "mapChips.cpp"
 #include "chip.h"
 #include "mainwindow.h"
 #include "qmessagebox.h"
@@ -89,10 +90,9 @@ void MainWindow::populateScene(){
 
 
     QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(), "Text Files (*.txt)");
-
-
     std::ifstream file(filePath.toStdString());
-//    std::ifstream file("./graph_dc_area.2022-03-11.txt");
+
+//    std::ifstream file("C:/Users/sivad/Desktop/Gitnow/Map_Path_Finder/chip/graph_dc_area.2022-03-11.txt");
 
     if (!file.is_open()) {
         QMessageBox messageBox;
@@ -189,6 +189,8 @@ void MainWindow::populateScene(){
     qDebug() << "Img Width: " << image.width();
     qDebug() << "Img Height: " << image.height();
 
+    int count = 0;
+
     for (auto& [id, v] : vertices) {
 
         v.y = project2map(v.latitude, minLat, thres)+margin;
@@ -203,14 +205,19 @@ void MainWindow::populateScene(){
                 if (x >= 0 && x < image.width() && y >= 0 && y < image.height()) {
 
                     image.setPixelColor(x, image.height()-y, gold);
-                    image.setPixelColor(x, image.height()-y, red);
 
                     if(x==v.y && y==v.x){
-                        qDebug() << "id: " << v.id << " ; x: " << x << " ; y: " << image.height()-y;
+                        QGraphicsItem *item = new Chip(red, x-radius, image.height()-y-radius, 2*radius+1, v.id);
+                        item->setPos(QPointF(x-radius, image.height()-y-radius));
+                        scene->addItem(item);
+                        scene->update();
+//                        qDebug() << "id: " << v.id << " ; x: " << x << " ; y: " << image.height()-y;
+                        count = count + 1;
                     }
                 }
             }
         }
+
 
 //        break;
     }
@@ -220,6 +227,10 @@ void MainWindow::populateScene(){
         int dest = e.dest;
         painter.drawLine(vertices[src].y, image.height()-vertices[src].x, vertices[dest].y, image.height()-vertices[dest].x);
     }
+
+    qDebug() << "Vertices count: " << count ;
+
+    qDebug() << "Actual Vertices count: " << vertices.size() ;
 
     painter.end();
 

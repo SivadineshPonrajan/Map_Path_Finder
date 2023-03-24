@@ -7,48 +7,54 @@
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 
-Chip::Chip(const QColor &color, int x, int y, int radius)
+Chip::Chip(const QColor &color, int x, int y, int radius, int nodeid)
 {
     this->x = x-radius;
     this->y = y-radius;
     this->color = color;
     this->radius = radius;
+    this->nodeid = nodeid;
+
+//    qDebug() << this->nodeid ;
+
     setZValue((x + y) % 2);
 
     setFlags(ItemIsSelectable | ItemIsMovable);
     setAcceptHoverEvents(true);
+
 }
 
 QRectF Chip::boundingRect() const
 {
-    return QRectF(0, 0, 110, 70);
+    return QRectF(0, 0, this->radius, this->radius);
 }
 
 QPainterPath Chip::shape() const
 {
     QPainterPath path;
-    path.addRect(14, 14, 82, 42);
+    path.addRect(0, 0, this->radius, this->radius);
     return path;
 }
 
 void Chip::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget)
 {
+    Q_UNUSED(option);
     Q_UNUSED(widget);
 
     QColor fillColor = (option->state & QStyle::State_Selected) ? color.darker(150) : color;
     if (option->state & QStyle::State_MouseOver)
         fillColor = fillColor.lighter(125);
 
-    const qreal lod = option->levelOfDetailFromTransform(painter->worldTransform());
+//    const qreal lod = option->levelOfDetailFromTransform(painter->worldTransform());
 //    if (lod < 0.2) {
 //        if (lod < 0.125) {
-//            painter->fillRect(QRectF(0, 0, 110, 100), fillColor);
+//            painter->fillRect(QRectF(0, 0, this->radius, this->radius), fillColor);
 //            return;
 //        }
 
 //        QBrush b = painter->brush();
 //        painter->setBrush(fillColor);
-//        painter->drawRect(13, 13, 97, 57);
+//        painter->drawRect(0, 0, this->radius, this->radius);
 //        painter->setBrush(b);
 //        return;
 //    }
@@ -57,16 +63,19 @@ void Chip::paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWid
     QPen pen = oldPen;
     int width = 0;
     if (option->state & QStyle::State_Selected)
-        width += 2;
+        width += 1;
 
     pen.setWidth(width);
     QBrush b = painter->brush();
     painter->setBrush(QBrush(fillColor.darker(option->state & QStyle::State_Sunken ? 120 : 100)));
 
-    painter->drawRect(QRect(-3, -3, 40, 40)); // chip main
+    painter->drawRect(QRect(0, 0, this->radius, this->radius)); // chip main
     painter->setBrush(b);
 
+    //    qDebug() << this->nodeid;
+
 //    if (lod >= 1) {
+//        qDebug() << "here" ;
 //        painter->setPen(QPen(Qt::gray, 1));
 //        painter->drawLine(15, 54, 94, 54);
 //        painter->drawLine(94, 53, 94, 15);
@@ -144,6 +153,6 @@ void Chip::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
 void Chip::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {
     QGraphicsItem::mouseReleaseEvent(event);
-    qDebug() << this->x;
+    qDebug() << this->nodeid;
     update();
 }

@@ -10,8 +10,7 @@
 class Chip : public QGraphicsItem
 {
 public:
-    Chip(const QColor &color, int x, int y, int radius);
-
+    Chip(const QColor &color, int x, int y, int radius, int nodeid);
     QRectF boundingRect() const override;
     QPainterPath shape() const override;
     void paint(QPainter *painter, const QStyleOptionGraphicsItem *item, QWidget *widget) override;
@@ -25,6 +24,7 @@ private:
     int x;
     int y;
     int radius;
+    int nodeid;
     QColor color;
     QList<QPointF> stuff;
 };
