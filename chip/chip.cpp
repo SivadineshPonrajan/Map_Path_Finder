@@ -7,6 +7,7 @@
 #include <QPainter>
 #include <QStyleOptionGraphicsItem>
 
+
 Chip::Chip(const QColor &color, int x, int y, int radius, int nodeid)
 {
     this->x = x-radius;
@@ -149,6 +150,7 @@ void Chip::mouseMoveEvent(QGraphicsSceneMouseEvent *event)
     }
     QGraphicsItem::mouseMoveEvent(event);
 }
+
 
 void Chip::mouseReleaseEvent(QGraphicsSceneMouseEvent *event)
 {

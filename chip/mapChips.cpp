@@ -15,6 +15,7 @@ private:
 
 public:
     mapChips(const QColor &color, int x, int y, int radius, int nodeid) : QGraphicsItem() {
+        this->color = color;
         this->x = x-radius;
         this->y = y-radius;
         this->color = color;
@@ -32,7 +33,7 @@ public:
     }
 
     void paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget = nullptr) override {
-        painter->setBrush(Qt::red);
+        painter->setBrush(this->color);
         painter->drawRect(boundingRect());
     }
 };

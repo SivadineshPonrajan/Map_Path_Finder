@@ -1,21 +1,20 @@
 // Copyright (C) 2016 The Qt Company Ltd.
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 
-#include "mapChips.cpp"
-#include "chip.h"
+#include "house.h"
 #include "mainwindow.h"
 #include "qmessagebox.h"
 #include "view.h"
 #include <QFileDialog>
 #include <QHBoxLayout>
 #include <QSplitter>
+#include <QMouseEvent>
 
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <vector>
 #include <limits>
-
 
 using namespace std;
 
@@ -47,6 +46,8 @@ struct Vertex {
     double longitude;
     int x;
     int y;
+    int xx;
+    int yy;
 };
 
 struct Edge {
@@ -56,25 +57,9 @@ struct Edge {
     std::string name;
 };
 
-
-#define PI 3.14159265358979323846
-int R = 6371009;
-
 struct Point {
     double x, y;
 };
-
-#define DEG2RAD(a)   ((a) / (180 / M_PI))
-#define RAD2DEG(a)   ((a) * (180 / M_PI))
-#define EARTH_RADIUS 6378137
-
-/* The following functions take their parameter and return their result in degrees */
-
-//double y2lat_d(double y)   { return RAD2DEG( atan(exp( DEG2RAD(y) )) * 2 - M_PI/2 ); }
-//double x2lon_d(double x)   { return x; }
-
-double lat2y(double lat) { return RAD2DEG( log(tan( DEG2RAD(lat) / 2 +  M_PI/4 )) ); }
-double lon2x(double lon) { return EARTH_RADIUS*(RAD2DEG(lon)); }
 
 double project2map(double data, double min, int thres){
     return (int)((data-min)*thres*1000);
@@ -85,14 +70,12 @@ double distance(Point p1, Point p2) {
     return sqrt(pow(p2.x - p1.x, 2) + pow(p2.y - p1.y, 2));
 }
 
-
 void MainWindow::populateScene(){
 
+//    QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(), "Text Files (*.txt)");
+//    std::ifstream file(filePath.toStdString());
 
-    QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(), "Text Files (*.txt)");
-    std::ifstream file(filePath.toStdString());
-
-//    std::ifstream file("C:/Users/sivad/Desktop/Gitnow/Map_Path_Finder/chip/graph_dc_area.2022-03-11.txt");
+    std::ifstream file("C:/Users/sivad/Desktop/Gitnow/Map_Path_Finder/chip/graph_dc_area.2022-03-11.txt");
 
     if (!file.is_open()) {
         QMessageBox messageBox;
@@ -102,6 +85,7 @@ void MainWindow::populateScene(){
 
     std::vector<Vertex> nodeVec;
     std::vector<Edge> edgeVec;
+    std::vector<Point> newPlot;
 
     std::map<int, Vertex> vertices;
     std::vector<Edge> edges;
@@ -125,7 +109,7 @@ void MainWindow::populateScene(){
             std::getline(iss, y, ',');
 
 //            if(std::stoi(vid)>=193 && std::stoi(vid)<=196){
-                Vertex vnode{ std::stoi(vid), std::stod(lat), std::stod(lon), 0, 0 };
+                Vertex vnode{ std::stoi(vid), std::stod(lat), std::stod(lon), 0, 0, 0, 0 };
                 vertices[std::stoi(vid)] = vnode;
                 if (std::stod(lat) < minLat) {
                     minLat = std::stod(lat);
@@ -169,7 +153,6 @@ void MainWindow::populateScene(){
     qDebug() << "X diff: "<< xdiff;
     qDebug() << "Y diff: "<< ydiff;
 
-
     int thres = 30;
     int margin = 100;
     int radius = thres/10;
@@ -179,12 +162,12 @@ void MainWindow::populateScene(){
 
     QColor gold(255, 215, 0);
     QColor red(255, 0, 0);
-//    QColor neonBlue(102, 255, 255);
+    QColor green(0, 255, 0);
+    QColor neonBlue(102, 255, 255);
 
     QPainter painter(&image);
     QPen pen(gold);
     painter.setPen(pen);
-
 
     qDebug() << "Img Width: " << image.width();
     qDebug() << "Img Height: " << image.height();
@@ -196,19 +179,17 @@ void MainWindow::populateScene(){
         v.y = project2map(v.latitude, minLat, thres)+margin;
         v.x = project2map(v.longitude , minLon, thres)+margin;
 
-//        QGraphicsItem *item = new Chip(red, v.x, v.y, radius);
-//        item->setPos(QPointF(v.x, image.height()-v.y));
-//        scene->addItem(item);
-
         for (int x = v.y - radius; x <= v.y + radius; x++) {
             for (int y = v.x - radius; y <= v.x + radius; y++) {
                 if (x >= 0 && x < image.width() && y >= 0 && y < image.height()) {
 
-                    image.setPixelColor(x, image.height()-y, gold);
+//                    image.setPixelColor(x, image.height()-y, red);
 
                     if(x==v.y && y==v.x){
-                        QGraphicsItem *item = new Chip(red, x-radius, image.height()-y-radius, 2*radius+1, v.id);
-                        item->setPos(QPointF(x-radius, image.height()-y-radius));
+                        v.yy = image.height()-y;
+                        v.xx = x;
+                        QGraphicsItem *item = new house(neonBlue, v.xx-radius, v.yy-radius, 2*radius+1, v.id);
+                        item->setPos(QPointF(v.xx-radius, v.yy-radius));
                         scene->addItem(item);
                         scene->update();
 //                        qDebug() << "id: " << v.id << " ; x: " << x << " ; y: " << image.height()-y;
@@ -217,9 +198,6 @@ void MainWindow::populateScene(){
                 }
             }
         }
-
-
-//        break;
     }
 
     for (auto& [id, e] : edgeLookUp) {
@@ -227,8 +205,6 @@ void MainWindow::populateScene(){
         int dest = e.dest;
         painter.drawLine(vertices[src].y, image.height()-vertices[src].x, vertices[dest].y, image.height()-vertices[dest].x);
     }
-
-    qDebug() << "Vertices count: " << count ;
 
     qDebug() << "Actual Vertices count: " << vertices.size() ;
 

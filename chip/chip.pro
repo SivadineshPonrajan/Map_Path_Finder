@@ -1,8 +1,9 @@
 RESOURCES += images.qrc
 
-HEADERS += mainwindow.h view.h chip.h
+HEADERS += mainwindow.h view.h chip.h \
+    house.h
 SOURCES += main.cpp \
-    mapChips.cpp
+    house.cpp
 SOURCES += mainwindow.cpp view.cpp chip.cpp
 
 QT += widgets
