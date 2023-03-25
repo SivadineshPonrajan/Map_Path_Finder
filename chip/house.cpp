@@ -43,6 +43,7 @@ void house::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
     if(pressed == true){
         brush.setColor(Qt::green);
         qDebug() << this->nodeid;
+
     }else if(ishovered == true){
 
     }

@@ -1,8 +1,12 @@
 RESOURCES += images.qrc
 
 HEADERS += mainwindow.h view.h chip.h \
-    house.h
+    edge.h \
+    graph.h \
+    house.h \
+    vertex.h
 SOURCES += main.cpp \
+    graph.cpp \
     house.cpp
 SOURCES += mainwindow.cpp view.cpp chip.cpp
 
