@@ -4,6 +4,8 @@
 #ifndef VIEW_H
 #define VIEW_H
 
+#include <QComboBox>
+#include <QPushButton>
 #include <QFrame>
 #include <QGraphicsView>
 
@@ -53,16 +55,23 @@ private slots:
     void print();
     void rotateLeft();
     void rotateRight();
+    void onComboBoxSelected(int index);
+    void mapSelected();
+    void mapResetted();
 
 private:
     GraphicsView *graphicsView;
     QLabel *label;
     QLabel *label2;
+    QComboBox *comboBox;
     QToolButton *selectModeButton;
     QToolButton *dragModeButton;
     QToolButton *antialiasButton;
     QToolButton *printButton;
     QToolButton *resetButton;
+    QPushButton *map;
+    QPushButton *resetMap;
+    QPushButton *reset;
     QSlider *zoomSlider;
     QSlider *rotateSlider;
 };
