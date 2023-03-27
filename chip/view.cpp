@@ -92,7 +92,11 @@ View::View(const QString &name, QWidget *parent)
     // Label layout
     QHBoxLayout *labelLayout = new QHBoxLayout;
     label = new QLabel(name);
-    label2 = new QLabel(tr("Pointer Mode"));
+    label2 = new QLabel(tr("Select Algorithm"));
+    comboBox = new QComboBox();
+    QStringList items;
+    items << "None {Default}" << "BFS" << "Dijkstra" << "A Star";
+    comboBox->addItems(items);
     selectModeButton = new QToolButton;
     selectModeButton->setText(tr("Select"));
     selectModeButton->setCheckable(true);
@@ -105,6 +109,10 @@ View::View(const QString &name, QWidget *parent)
     antialiasButton->setText(tr("Antialiasing"));
     antialiasButton->setCheckable(true);
     antialiasButton->setChecked(false);
+    map = new QPushButton;
+    map->setText("Map");
+    resetMap = new QPushButton;
+    resetMap->setText("Reset");
     printButton = new QToolButton;
     printButton->setIcon(QIcon(QPixmap(":/fileprint.png")));
 
@@ -116,10 +124,13 @@ View::View(const QString &name, QWidget *parent)
     labelLayout->addWidget(label);
     labelLayout->addStretch();
     labelLayout->addWidget(label2);
-    labelLayout->addWidget(selectModeButton);
-    labelLayout->addWidget(dragModeButton);
+    labelLayout->addWidget(comboBox);
+    labelLayout->addWidget(map);
+    labelLayout->addWidget(resetMap);
+//    labelLayout->addWidget(selectModeButton);
+//    labelLayout->addWidget(dragModeButton);
     labelLayout->addStretch();
-    labelLayout->addWidget(antialiasButton);
+//    labelLayout->addWidget(antialiasButton);
     labelLayout->addWidget(printButton);
 
     QGridLayout *topLayout = new QGridLayout;
@@ -138,6 +149,9 @@ View::View(const QString &name, QWidget *parent)
     connect(graphicsView->horizontalScrollBar(), &QAbstractSlider::valueChanged,
             this, &View::setResetButtonEnabled);
     connect(selectModeButton, &QAbstractButton::toggled, this, &View::togglePointerMode);
+    connect(comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onComboBoxSelected(int)));
+    connect(map, SIGNAL(clicked()), this, SLOT(mapSelected()));
+    connect(resetMap, SIGNAL(clicked()), this, SLOT(mapResetted()));
     connect(dragModeButton, &QAbstractButton::toggled, this, &View::togglePointerMode);
     connect(antialiasButton, &QAbstractButton::toggled, this, &View::toggleAntialiasing);
     connect(rotateLeftIcon, &QAbstractButton::clicked, this, &View::rotateLeft);

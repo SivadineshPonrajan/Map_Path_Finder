@@ -18,7 +18,6 @@ public:
     MainWindow(QWidget *parent = nullptr);
     bool eventFilter(QObject *obj, QEvent *event);
     View* view;
-private:
     void setupMatrix();
     void populateScene();
 

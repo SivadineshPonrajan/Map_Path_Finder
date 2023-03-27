@@ -178,6 +178,24 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
     }
 }
 
+void View::onComboBoxSelected(int index)
+{
+    QString selectedText = comboBox->itemText(index);
+    qDebug() << "selected text in combo box" << selectedText;
+}
+
+void View::mapSelected()
+{
+    qDebug() << "Map Selected: " << comboBox->currentIndex();
+}
+
+void View::mapResetted()
+{
+    comboBox->setCurrentIndex(0);
+//    MainWindow::populateScene();
+    qDebug() << "Map Resetted!";
+}
+
 void MainWindow::populateScene(){
 
 //    QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(), "Text Files (*.txt)");
@@ -199,6 +217,7 @@ void MainWindow::populateScene(){
 
     std::vector<Edge> edges;
     std::multimap<int, Edge> edgeLookUp;
+
 
     double minLat = std::numeric_limits<double>::max();
     double maxLat = std::numeric_limits<double>::lowest();
