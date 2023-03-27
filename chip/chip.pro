@@ -4,11 +4,8 @@ HEADERS += mainwindow.h view.h chip.h \
     edge.h \
     graph.h \
     house.h \
-    vertex.h
-SOURCES += main.cpp \
-    graph.cpp \
-    flagitem.h \
-    house.h
+    vertex.h\
+    flagitem.h
 SOURCES += main.cpp \
     flagitem.cpp \
     house.cpp
