@@ -1,8 +1,10 @@
 RESOURCES += images.qrc
 
 HEADERS += mainwindow.h view.h chip.h \
+    flagitem.h \
     house.h
 SOURCES += main.cpp \
+    flagitem.cpp \
     house.cpp
 SOURCES += mainwindow.cpp view.cpp chip.cpp
 

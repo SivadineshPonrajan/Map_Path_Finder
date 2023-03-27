@@ -5,6 +5,7 @@
 #include "mainwindow.h"
 #include "qmessagebox.h"
 #include "view.h"
+#include "flagitem.h"
 #include <QFileDialog>
 #include <QHBoxLayout>
 #include <QSplitter>
@@ -16,8 +17,18 @@
 #include <vector>
 #include <limits>
 
-using namespace std;
+std::vector<QPointF> mapPoints;
+QGraphicsItem* startFlag;
+QGraphicsItem* endFlag;
+QGraphicsItem* startItem;
+QGraphicsItem* endItem;
 
+int thres = 30;
+int margin = 100;
+int radius = thres/10;
+
+using namespace std;
+View* view;
 MainWindow::MainWindow(QWidget *parent)
     : QWidget(parent), scene(new QGraphicsScene(this))
     , h1Splitter(new QSplitter(this)), h2Splitter(new QSplitter(this))
@@ -29,7 +40,9 @@ MainWindow::MainWindow(QWidget *parent)
     vSplitter->addWidget(h1Splitter);
     vSplitter->addWidget(h2Splitter);
 
-    View *view = new View("Map Explorer");
+    view = new View("Map Explorer");
+    view->view()->viewport()->installEventFilter(this);
+    scene->setBackgroundBrush(Qt::black);
     view->view()->setScene(scene);
     h1Splitter->addWidget(view);
 
@@ -61,21 +74,116 @@ struct Point {
     double x, y;
 };
 
+std::map<int, Vertex> vertices;
+
 double project2map(double data, double min, int thres){
     return (int)((data-min)*thres*1000);
 }
 
-// Compute the distance between two points in Cartesian coordinates
-double distance(Point p1, Point p2) {
-    return sqrt(pow(p2.x - p1.x, 2) + pow(p2.y - p1.y, 2));
+double distance(const QPointF& p1, const QPointF& p2)
+{
+    double dx = p1.x() - p2.x();
+    double dy = p1.y() - p2.y();
+    return std::sqrt(dx*dx + dy*dy);
+}
+
+QPointF findNearest(QPointF point){
+    Vertex* nearestVertex = nullptr;
+     double minDistance = std::numeric_limits<double>::max();
+
+     for (auto& vertexPair : vertices) {
+         Vertex& vertex = vertexPair.second;
+         QPointF vertexPoint(vertex.xx, vertex.yy);
+         double d = distance(point, vertexPoint);
+         if (d < minDistance) {
+             minDistance = d;
+             nearestVertex = &vertex;
+         }
+     }
+     return QPointF(nearestVertex->xx,nearestVertex->yy);
+}
+
+bool MainWindow::eventFilter(QObject *obj, QEvent *event)
+{
+    if (event->type() == QEvent::MouseButtonPress){
+
+    QMouseEvent* mouseEvent = dynamic_cast<QMouseEvent*>(event);
+    QGraphicsView* graphicsView = view->view();
+
+    if (mouseEvent->button() == Qt::LeftButton) {
+      QPointF nearest;
+      QPointF point = graphicsView->mapToScene(mouseEvent->pos());
+      qDebug() <<"Click at: "<<point.x()<< " " <<point.y();
+//      extern std::vector<QPointF> mapPoints;
+      if(mapPoints.size()==0){
+          mapPoints.push_back(point);
+          qDebug() << "Start Element";
+
+//          extern QGraphicsRectItem* startFlag;
+//          startFlag = new QGraphicsRectItem(point.x(), point.y(), 20, 10);
+//          QPen fpen(Qt::black);
+//          fpen.setWidth(2);
+//          startFlag->setPen(fpen);
+//          startFlag->setBrush(QBrush(Qt::red));
+//          scene->addItem(startFlag);
+
+          startFlag = new flagItem(point.x(), point.y(), Qt::red);
+          scene->addItem(startFlag);
+//          scene->update();
+
+          //          start
+           nearest = findNearest(point);
+           startItem = new house(Qt::red, nearest.x()-radius, nearest.y()-radius, 2*radius+1, 1);
+           startItem->setPos(QPointF(nearest.x()-radius, nearest.y()-radius));
+           scene->addItem(startItem);
+           scene->update();
+          //          end
+      }
+      else if(mapPoints.size()==1){
+          mapPoints.push_back(point);
+          qDebug() << "Destiny Element";
+
+          endFlag = new flagItem(point.x(), point.y(), Qt::green);
+          scene->addItem(endFlag);
+//          scene->update();
+
+          //          start
+           nearest = findNearest(point);
+           endItem = new house(Qt::green, nearest.x()-radius, nearest.y()-radius, 2*radius+1, 1);
+           endItem->setPos(QPointF(nearest.x()-radius, nearest.y()-radius));
+           scene->addItem(endItem);
+           scene->update();
+          //          end
+      }
+      else{
+          QMessageBox::StandardButton reply;
+          reply = QMessageBox::question(NULL, "Reset Flags Alert", "Want to reset the start and the end flag points?", QMessageBox::Yes|QMessageBox::No);
+
+              if (reply == QMessageBox::Yes) {
+                  mapPoints.clear();
+                  qDebug() << "Removed all Elements";
+                  scene->removeItem(startFlag);
+                  scene->removeItem(startItem);
+                  scene->removeItem(endFlag);
+                  scene->removeItem(endItem);
+              }
+              else {
+                  qDebug() << "Nothing happened";
+              }
+
+      }
+      qDebug() << "The map Vector" << mapPoints;
+    }else
+    qDebug() << "clicked here";
+    }
 }
 
 void MainWindow::populateScene(){
 
-    QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(), "Text Files (*.txt)");
-    std::ifstream file(filePath.toStdString());
+//    QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(), "Text Files (*.txt)");
+//    std::ifstream file(filePath.toStdString());
 
-//    std::ifstream file("C:/Users/sivad/Desktop/Gitnow/Map_Path_Finder/chip/graph_dc_area.2022-03-11.txt");
+    std::ifstream file("C:/Users/sivad/Desktop/Gitnow/Map_Path_Finder/chip/graph_dc_area.2022-03-11.txt");
 
     if (!file.is_open()) {
         QMessageBox messageBox;
@@ -83,11 +191,12 @@ void MainWindow::populateScene(){
         messageBox.setFixedSize(500,200);
     }
 
+
     std::vector<Vertex> nodeVec;
     std::vector<Edge> edgeVec;
     std::vector<Point> newPlot;
 
-    std::map<int, Vertex> vertices;
+
     std::vector<Edge> edges;
     std::multimap<int, Edge> edgeLookUp;
 
@@ -152,10 +261,6 @@ void MainWindow::populateScene(){
 
     qDebug() << "X diff: "<< xdiff;
     qDebug() << "Y diff: "<< ydiff;
-
-    int thres = 30;
-    int margin = 100;
-    int radius = thres/10;
 
     QImage image(((2*margin)+(ydiff*thres)), ((2*margin)+(xdiff*thres)), QImage::Format_RGB32);
     image.fill(Qt::black);
