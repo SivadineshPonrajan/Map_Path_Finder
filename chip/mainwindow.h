@@ -3,7 +3,7 @@
 
 #ifndef MAINWINDOW_H
 #define MAINWINDOW_H
-
+#include "view.h"
 #include <QWidget>
 
 QT_BEGIN_NAMESPACE
@@ -16,7 +16,8 @@ class MainWindow : public QWidget
     Q_OBJECT
 public:
     MainWindow(QWidget *parent = nullptr);
-
+    bool eventFilter(QObject *obj, QEvent *event);
+    View* view;
 private:
     void setupMatrix();
     void populateScene();
