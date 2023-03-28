@@ -227,7 +227,7 @@ void MainWindow::populateScene(int algo){
 //    QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(), "Text Files (*.txt)");
 //    std::ifstream file(filePath.toStdString());
 
-    std::ifstream file("/Users/Pipo/Documents/University/Embedded C++/Map_Path_Finder/dataset/graph_dc_area.2022-03-11.txt");
+    std::ifstream file("C:/Users/sivad/Desktop/Gitnow/Map_Path_Finder/chip/graph_dc_area.2022-03-11.txt");
 
     if (!file.is_open()) {
         QMessageBox messageBox;
@@ -334,7 +334,7 @@ void MainWindow::populateScene(int algo){
             temp = image.height()-v.x;
             v.x = v.y;
             v.y = temp;
-            QGraphicsItem *item = new house(neonBlue, v.x-radius, v.y-radius, 2*radius+1, v.id);
+            QGraphicsItem *item = new house(gold, v.x-radius, v.y-radius, 2*radius+1, v.id);
             item->setPos(QPointF(v.x-radius, v.y-radius));
             scene->addItem(item);
             scene->update();
@@ -347,16 +347,66 @@ void MainWindow::populateScene(int algo){
         painter.drawLine(vertices[src].x, vertices[src].y, vertices[dest].x, vertices[dest].y);
     }
 
-    Graph graph("/Users/Pipo/Documents/University/Embedded C++/Map_Path_Finder/dataset/graph_dc_area.2022-03-11.txt");
+    Graph graph("C:/Users/sivad/Desktop/Gitnow/Map_Path_Finder/chip/graph_dc_area.2022-03-11.txt");
+    QPen epen(green, 7);
+    radius = radius*1.4;
     if(algo == 1){
         auto path = graph.bfs(startNode, endNode);
         qDebug() << "path size: " << path.size();
 
-        for(auto v: graph.currentlyVisitedVertices)
-            qDebug() << v;
+        for(auto v: graph.currentlyVisitedVertices){
+            QGraphicsItem *item = new house(neonBlue, vertices[v].x-radius, vertices[v].y-radius, 2*radius+1, v);
+            item->setPos(QPointF(vertices[v].x-radius, vertices[v].y-radius));
+            scene->addItem(item);
+        }
         plotVertex edgefrom = vertices[startNode];
         plotVertex edgeto;
-        QPen epen(green, 5);
+        painter.setPen(epen);
+        for (auto & element : path) {
+            auto id = vertices[element.first];
+
+            QGraphicsItem *item = new house(red, vertices[element.first].x-radius, vertices[element.first].y-radius, 2*radius+1, element.first);
+            item->setPos(QPointF(vertices[element.first].x-radius, vertices[element.first].y-radius));
+            scene->addItem(item);
+            edgeto = vertices[element.first];
+            painter.drawLine(edgefrom.x, edgefrom.y, edgeto.x, edgeto.y);
+            scene->update();
+            edgefrom = edgeto;
+        }
+    }else if(algo == 2){
+        auto path = graph.dijkstra(startNode, endNode);
+        qDebug() << "path size: " << path.size();
+
+        for(auto v: graph.currentlyVisitedVertices){
+            QGraphicsItem *item = new house(neonBlue, vertices[v].x-radius, vertices[v].y-radius, 2*radius+1, v);
+            item->setPos(QPointF(vertices[v].x-radius, vertices[v].y-radius));
+            scene->addItem(item);
+        }
+        plotVertex edgefrom = vertices[startNode];
+        plotVertex edgeto;
+        painter.setPen(epen);
+        for (auto & element : path) {
+            auto id = vertices[element.first];
+
+            QGraphicsItem *item = new house(red, vertices[element.first].x-radius, vertices[element.first].y-radius, 2*radius+1, element.first);
+            item->setPos(QPointF(vertices[element.first].x-radius, vertices[element.first].y-radius));
+            scene->addItem(item);
+            edgeto = vertices[element.first];
+            painter.drawLine(edgefrom.x, edgefrom.y, edgeto.x, edgeto.y);
+            scene->update();
+            edgefrom = edgeto;
+        }
+    }else if(algo == 3){
+        auto path = graph.astar(startNode, endNode);
+        qDebug() << "path size: " << path.size();
+
+        for(auto v: graph.currentlyVisitedVertices){
+            QGraphicsItem *item = new house(neonBlue, vertices[v].x-radius, vertices[v].y-radius, 2*radius+1, v);
+            item->setPos(QPointF(vertices[v].x-radius, vertices[v].y-radius));
+            scene->addItem(item);
+        }
+        plotVertex edgefrom = vertices[startNode];
+        plotVertex edgeto;
         painter.setPen(epen);
         for (auto & element : path) {
             auto id = vertices[element.first];
@@ -374,6 +424,7 @@ void MainWindow::populateScene(int algo){
     qDebug() << "Actual Vertices count: " << vertices.size() ;
 
     iheight = image.height();
+    radius = thres/10;
 
     painter.end();
 

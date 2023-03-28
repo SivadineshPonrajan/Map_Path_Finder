@@ -225,6 +225,8 @@ std::vector<std::pair<int, double>> Graph::dijkstra(int start, int goal){
         if (vcurrent == goal)
         {
             std::cout << "Total visited vertex: " << numberOfVertices << std::endl;
+            currentlyVisitedVertices = closed_set;
+
             return backtrace(parent, start, goal);
         }
 
@@ -293,6 +295,8 @@ std::vector<std::pair<int, double>> Graph::astar(int start, int goal){
         if (vcurrent == goal)
         {
             std::cout << "Total visited vertex: " << numberOfVertices << std::endl;
+            currentlyVisitedVertices = closed_set;
+
             return backtrace(parent, start, goal);
         }
 

@@ -258,16 +258,16 @@ void View::onComboBoxSelected(int index){
 
 void View::mapSelected()
 {
-    MainWindow *mainWindow = qobject_cast<MainWindow *>(parent());
-    mainWindow->SelectAlgo(comboBox->currentIndex());
+    MainWindow *mainWindow = qobject_cast<MainWindow *>(parent()->parent()->parent());
+    mainWindow->populateScene(comboBox->currentIndex());
 //    qDebug() << "Map Selected: " << comboBox->currentIndex();
 }
 
 void View::mapResetted()
 {
     comboBox->setCurrentIndex(0);
-    MainWindow *mainWindow = qobject_cast<MainWindow *>(parent());
-    mainWindow->ResetAlgo();
+    MainWindow *mainWindow = qobject_cast<MainWindow *>(parent()->parent()->parent());
+    mainWindow->populateScene(0);
 //    qDebug() << "Map Resetted!";
 }
 
