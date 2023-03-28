@@ -7,6 +7,7 @@ HEADERS += mainwindow.h view.h chip.h \
     vertex.h\
     flagitem.h
 SOURCES += main.cpp \
+    graph.cpp \
     flagitem.cpp \
     house.cpp
 SOURCES += mainwindow.cpp view.cpp chip.cpp

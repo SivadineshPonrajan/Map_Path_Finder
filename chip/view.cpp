@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-Qt-Commercial OR BSD-3-Clause
 
 #include "view.h"
+#include "mainwindow.h"
 
 #if defined(QT_PRINTSUPPORT_LIB)
 #include <QtPrintSupport/qtprintsupportglobal.h>
@@ -150,6 +151,7 @@ View::View(const QString &name, QWidget *parent)
             this, &View::setResetButtonEnabled);
     connect(selectModeButton, &QAbstractButton::toggled, this, &View::togglePointerMode);
     connect(comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onComboBoxSelected(int)));
+//    connect(comboBox, SIGNAL(currentIndexChanged(int)), this, SLOT(onComboBoxSelected(int)));
     connect(map, SIGNAL(clicked()), this, SLOT(mapSelected()));
     connect(resetMap, SIGNAL(clicked()), this, SLOT(mapResetted()));
     connect(dragModeButton, &QAbstractButton::toggled, this, &View::togglePointerMode);
@@ -249,3 +251,25 @@ void View::rotateRight()
 {
     rotateSlider->setValue(rotateSlider->value() + 10);
 }
+
+void View::onComboBoxSelected(int index){
+    qDebug() << "Algo: " << index;
+}
+
+void View::mapSelected()
+{
+    MainWindow *mainWindow = qobject_cast<MainWindow *>(parent());
+    mainWindow->SelectAlgo(comboBox->currentIndex());
+//    qDebug() << "Map Selected: " << comboBox->currentIndex();
+}
+
+void View::mapResetted()
+{
+    comboBox->setCurrentIndex(0);
+    MainWindow *mainWindow = qobject_cast<MainWindow *>(parent());
+    mainWindow->ResetAlgo();
+//    qDebug() << "Map Resetted!";
+}
+
+
+

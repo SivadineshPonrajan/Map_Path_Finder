@@ -10,6 +10,7 @@
 #include <QHBoxLayout>
 #include <QSplitter>
 #include <QMouseEvent>
+#include "graph.h"
 
 #include <iostream>
 #include <fstream>
@@ -22,9 +23,16 @@ QGraphicsItem* startFlag;
 QGraphicsItem* endFlag;
 QGraphicsItem* startItem;
 QGraphicsItem* endItem;
+QGraphicsTextItem *coords;
 
+QGraphicsScene* backup_scene;
+
+int temp = 0;
 int thres = 30;
+int iheight = 0;
 int margin = 100;
+int startNode = 0;
+int endNode = 0;
 int radius = thres/10;
 
 using namespace std;
@@ -33,7 +41,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QWidget(parent), scene(new QGraphicsScene(this))
     , h1Splitter(new QSplitter(this)), h2Splitter(new QSplitter(this))
 {
-    populateScene();
+    populateScene(0);
 
     QSplitter *vSplitter = new QSplitter;
     vSplitter->setOrientation(Qt::Vertical);
@@ -44,6 +52,7 @@ MainWindow::MainWindow(QWidget *parent)
     view->view()->viewport()->installEventFilter(this);
     scene->setBackgroundBrush(Qt::black);
     view->view()->setScene(scene);
+    backup_scene = scene;
     h1Splitter->addWidget(view);
 
     QHBoxLayout *layout = new QHBoxLayout;
@@ -53,7 +62,7 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle(tr("Embedded C++ Project"));
 }
 
-struct Vertex {
+struct plotVertex {
     int id;
     double latitude;
     double longitude;
@@ -63,7 +72,7 @@ struct Vertex {
     int yy;
 };
 
-struct Edge {
+struct plotEdge {
     int src;
     int dest;
     double dist;
@@ -74,7 +83,7 @@ struct Point {
     double x, y;
 };
 
-std::map<int, Vertex> vertices;
+std::map<int, plotVertex> vertices;
 
 double project2map(double data, double min, int thres){
     return (int)((data-min)*thres*1000);
@@ -87,20 +96,20 @@ double distance(const QPointF& p1, const QPointF& p2)
     return std::sqrt(dx*dx + dy*dy);
 }
 
-QPointF findNearest(QPointF point){
-    Vertex* nearestVertex = nullptr;
+int findNearest(QPointF point){
+    plotVertex* nearestplotVertex = nullptr;
      double minDistance = std::numeric_limits<double>::max();
 
-     for (auto& vertexPair : vertices) {
-         Vertex& vertex = vertexPair.second;
-         QPointF vertexPoint(vertex.xx, vertex.yy);
-         double d = distance(point, vertexPoint);
+     for (auto& plotVertexPair : vertices) {
+         plotVertex& plotVertex = plotVertexPair.second;
+         QPointF plotVertexPoint(plotVertex.x, plotVertex.y);
+         double d = distance(point, plotVertexPoint);
          if (d < minDistance) {
              minDistance = d;
-             nearestVertex = &vertex;
+             nearestplotVertex = &plotVertex;
          }
      }
-     return QPointF(nearestVertex->xx,nearestVertex->yy);
+     return nearestplotVertex->id;
 }
 
 bool MainWindow::eventFilter(QObject *obj, QEvent *event)
@@ -114,28 +123,28 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
       QPointF nearest;
       QPointF point = graphicsView->mapToScene(mouseEvent->pos());
       qDebug() <<"Click at: "<<point.x()<< " " <<point.y();
-//      extern std::vector<QPointF> mapPoints;
       if(mapPoints.size()==0){
           mapPoints.push_back(point);
           qDebug() << "Start Element";
-
-//          extern QGraphicsRectItem* startFlag;
-//          startFlag = new QGraphicsRectItem(point.x(), point.y(), 20, 10);
-//          QPen fpen(Qt::black);
-//          fpen.setWidth(2);
-//          startFlag->setPen(fpen);
-//          startFlag->setBrush(QBrush(Qt::red));
-//          scene->addItem(startFlag);
 
           startFlag = new flagItem(point.x(), point.y(), Qt::red);
           scene->addItem(startFlag);
 //          scene->update();
 
           //          start
-           nearest = findNearest(point);
-           startItem = new house(Qt::red, nearest.x()-radius, nearest.y()-radius, 2*radius+1, 1);
-           startItem->setPos(QPointF(nearest.x()-radius, nearest.y()-radius));
+          startNode = findNearest(point);
+          qDebug() << "Selected node: " << startNode;
+           startItem = new house(Qt::red, vertices[startNode].x-radius, vertices[startNode].y-radius, 2*radius+1, 1);
+           startItem->setPos(QPointF(vertices[startNode].x-radius, vertices[startNode].y-radius));
            scene->addItem(startItem);
+
+           coords = new QGraphicsTextItem("Start Point = "+QString::number(startNode));
+           coords->setDefaultTextColor(Qt::white);
+           QFont font("Arial", 100);
+           coords->setFont(font);
+           coords->setPos(250, iheight);
+           scene->addItem(coords);
+
            scene->update();
           //          end
       }
@@ -148,24 +157,41 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 //          scene->update();
 
           //          start
-           nearest = findNearest(point);
-           endItem = new house(Qt::green, nearest.x()-radius, nearest.y()-radius, 2*radius+1, 1);
-           endItem->setPos(QPointF(nearest.x()-radius, nearest.y()-radius));
+           endNode = findNearest(point);
+           qDebug() << "Selected node: " << endNode;
+           endItem = new house(Qt::green, vertices[endNode].x-radius, vertices[endNode].y-radius, 2*radius+1, 1);
+           endItem->setPos(QPointF(vertices[endNode].x-radius, vertices[endNode].y-radius));
            scene->addItem(endItem);
+
+           coords->setPlainText(coords->toPlainText()+", End Point = "+QString::number(endNode));
+
            scene->update();
           //          end
       }
       else{
           QMessageBox::StandardButton reply;
-          reply = QMessageBox::question(NULL, "Reset Flags Alert", "Want to reset the start and the end flag points?", QMessageBox::Yes|QMessageBox::No);
+          reply = QMessageBox::question(NULL, "Reset Flags Alert", "Want to map the algorithm or reset the start and the end flag points?", QMessageBox::Yes|QMessageBox::No);
 
               if (reply == QMessageBox::Yes) {
-                  mapPoints.clear();
-                  qDebug() << "Removed all Elements";
-                  scene->removeItem(startFlag);
-                  scene->removeItem(startItem);
-                  scene->removeItem(endFlag);
-                  scene->removeItem(endItem);
+                  if(view->getComboBox()->currentIndex()==0){
+                      coords->setPlainText("");
+                      mapPoints.clear();
+                      scene->removeItem(startFlag);
+                      scene->removeItem(startItem);
+                      scene->removeItem(endFlag);
+                      scene->removeItem(endItem);
+                      scene->clear();
+                      qDebug() << "Removed all Elements";
+                      populateScene(0);
+                  }else{
+                      scene->addItem(startFlag);
+                      scene->addItem(startItem);
+                      scene->addItem(endFlag);
+                      scene->addItem(endItem);
+                      scene->addItem(coords);
+                      populateScene(view->getComboBox()->currentIndex());
+                  }
+
               }
               else {
                   qDebug() << "Nothing happened";
@@ -178,25 +204,25 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
     }
 }
 
-void View::onComboBoxSelected(int index)
-{
-    QString selectedText = comboBox->itemText(index);
-    qDebug() << "selected text in combo box" << selectedText;
+void MainWindow::SelectAlgo(int index){
+    qDebug() << "Selected Algo: " << index;
 }
 
-void View::mapSelected()
-{
-    qDebug() << "Map Selected: " << comboBox->currentIndex();
-}
+void MainWindow::ResetAlgo(){
+//    mapPoints.clear();
+//    QGraphicsView* graphicsView = view->view();
+//    graphicsView->rotate(10);
+//    graphicsView->scene()->removeItem(startFlag);
 
-void View::mapResetted()
-{
-    comboBox->setCurrentIndex(0);
-//    MainWindow::populateScene();
+//    scene->removeItem(startFlag);
+//    scene->removeItem(startItem);
+//    scene->removeItem(endFlag);
+//    scene->removeItem(endItem);
     qDebug() << "Map Resetted!";
+//    MainWindow::populateScene(0);
 }
 
-void MainWindow::populateScene(){
+void MainWindow::populateScene(int algo){
 
 //    QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(), "Text Files (*.txt)");
 //    std::ifstream file(filePath.toStdString());
@@ -210,13 +236,13 @@ void MainWindow::populateScene(){
     }
 
 
-    std::vector<Vertex> nodeVec;
-    std::vector<Edge> edgeVec;
+    std::vector<plotVertex> nodeVec;
+    std::vector<plotEdge> plotEdgeVec;
     std::vector<Point> newPlot;
 
 
-    std::vector<Edge> edges;
-    std::multimap<int, Edge> edgeLookUp;
+    std::vector<plotEdge> plotEdges;
+    std::multimap<int, plotEdge> plotEdgeLookUp;
 
 
     double minLat = std::numeric_limits<double>::max();
@@ -237,7 +263,7 @@ void MainWindow::populateScene(){
             std::getline(iss, y, ',');
 
 //            if(std::stoi(vid)>=193 && std::stoi(vid)<=196){
-                Vertex vnode{ std::stoi(vid), std::stod(lat), std::stod(lon), 0, 0, 0, 0 };
+                plotVertex vnode{ std::stoi(vid), std::stod(lat), std::stod(lon), 0, 0, 0, 0 };
                 vertices[std::stoi(vid)] = vnode;
                 if (std::stod(lat) < minLat) {
                     minLat = std::stod(lat);
@@ -264,8 +290,8 @@ void MainWindow::populateScene(){
             std::getline(iss, e1, ',');
 
 //            if(std::stoi(esrc)>=193 && std::stoi(esrc)<=196 && std::stoi(edest)>=193 && std::stoi(edest)<=196){
-            Edge enode{ std::stoi(esrc), std::stoi(edest), std::stod(edist), ename };
-            edgeLookUp.insert({std::stoi(esrc), enode});
+            plotEdge enode{ std::stoi(esrc), std::stoi(edest), std::stod(edist), ename };
+            plotEdgeLookUp.insert({std::stoi(esrc), enode});
 //            }
         }
     }
@@ -303,37 +329,53 @@ void MainWindow::populateScene(){
         v.y = project2map(v.latitude, minLat, thres)+margin;
         v.x = project2map(v.longitude , minLon, thres)+margin;
 
-        for (int x = v.y - radius; x <= v.y + radius; x++) {
-            for (int y = v.x - radius; y <= v.x + radius; y++) {
-                if (x >= 0 && x < image.width() && y >= 0 && y < image.height()) {
 
-//                    image.setPixelColor(x, image.height()-y, red);
-
-                    if(x==v.y && y==v.x){
-                        v.yy = image.height()-y;
-                        v.xx = x;
-                        QGraphicsItem *item = new house(neonBlue, v.xx-radius, v.yy-radius, 2*radius+1, v.id);
-                        item->setPos(QPointF(v.xx-radius, v.yy-radius));
-                        scene->addItem(item);
-                        scene->update();
-//                        qDebug() << "id: " << v.id << " ; x: " << x << " ; y: " << image.height()-y;
-                        count = count + 1;
-                    }
-                }
-            }
+        if(v.y - radius >= 0 && v.y - radius < image.width() && v.x - radius >= 0 && v.x - radius < image.height()) {
+            temp = image.height()-v.x;
+            v.x = v.y;
+            v.y = temp;
+            QGraphicsItem *item = new house(neonBlue, v.x-radius, v.y-radius, 2*radius+1, v.id);
+            item->setPos(QPointF(v.x-radius, v.y-radius));
+            scene->addItem(item);
+            scene->update();
         }
     }
 
-    for (auto& [id, e] : edgeLookUp) {
+    for (auto& [id, e] : plotEdgeLookUp) {
         int src = e.src;
         int dest = e.dest;
-        painter.drawLine(vertices[src].y, image.height()-vertices[src].x, vertices[dest].y, image.height()-vertices[dest].x);
+        painter.drawLine(vertices[src].x, vertices[src].y, vertices[dest].x, vertices[dest].y);
+    }
+
+    Graph graph("C:/Users/sivad/Desktop/Gitnow/Map_Path_Finder/chip/graph_dc_area.2022-03-11.txt");
+    if(algo == 1){
+        auto path = graph.bfs(startNode, endNode);
+        qDebug() << "path size: " << path.size();
+        plotVertex edgefrom = vertices[startNode];
+        plotVertex edgeto;
+        QPen epen(green, 5);
+        painter.setPen(epen);
+        for (auto & element : path) {
+            auto id = vertices[element.first];
+
+            QGraphicsItem *item = new house(red, vertices[element.first].x-radius, vertices[element.first].y-radius, 2*radius+1, element.first);
+            item->setPos(QPointF(vertices[element.first].x-radius, vertices[element.first].y-radius));
+            scene->addItem(item);
+            edgeto = vertices[element.first];
+            painter.drawLine(edgefrom.x, edgefrom.y, edgeto.x, edgeto.y);
+            scene->update();
+            edgefrom = edgeto;
+        }
     }
 
     qDebug() << "Actual Vertices count: " << vertices.size() ;
+
+    iheight = image.height();
 
     painter.end();
 
     QPixmap pixmap = QPixmap::fromImage(image);
     QGraphicsPixmapItem *pixmapItem = scene->addPixmap(pixmap);
+
+    qDebug() << ((algo==0)? "Default" : (algo==1)? "BFS" : (algo==2)? "Dijkstra" : (algo==3)? "A Star" : "Error");
 }

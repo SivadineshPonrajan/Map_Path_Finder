@@ -40,6 +40,8 @@ public:
 
     QGraphicsView *view() const;
 
+    QComboBox* getComboBox() const { return comboBox; }
+
 public slots:
     void zoomIn();
     void zoomOut();
@@ -55,9 +57,9 @@ private slots:
     void print();
     void rotateLeft();
     void rotateRight();
-    void onComboBoxSelected(int index);
     void mapSelected();
     void mapResetted();
+    void onComboBoxSelected(int index);
 
 private:
     GraphicsView *graphicsView;

@@ -19,8 +19,10 @@ public:
     bool eventFilter(QObject *obj, QEvent *event);
     View* view;
     void setupMatrix();
-    void populateScene();
-
+    void populateScene(int data);
+    void ResetAlgo();
+    void SelectAlgo(int index);
+private:
     QGraphicsScene *scene;
     QSplitter *h1Splitter;
     QSplitter *h2Splitter;
