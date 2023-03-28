@@ -266,11 +266,11 @@ void MainWindow::populateScene(int algo){
     while (std::getline(file, line)) {
         if(line[0]=='V'){
             std::istringstream iss(line);
-            std::string v, vid, lat, lon, x, y;
+            std::string v, vid, lon, lat, x, y;
             std::getline(iss, v, ',');
             std::getline(iss, vid, ',');
-            std::getline(iss, lat, ',');
             std::getline(iss, lon, ',');
+            std::getline(iss, lat, ',');
             std::getline(iss, x, ',');
             std::getline(iss, y, ',');
 
@@ -313,8 +313,8 @@ void MainWindow::populateScene(int algo){
     qDebug() << "Min longitude: " << minLon;
     qDebug() << "Max longitude: " << maxLon;
 
-    int xdiff = (maxLon - minLon)*1000;
-    int ydiff = (maxLat - minLat)*1000;
+    int xdiff = (maxLat - minLat)*1000;
+    int ydiff = (maxLon - minLon)*1000;
 
     qDebug() << "X diff: "<< xdiff;
     qDebug() << "Y diff: "<< ydiff;
@@ -338,14 +338,11 @@ void MainWindow::populateScene(int algo){
 
     for (auto& [id, v] : vertices) {
 
-        v.y = project2map(v.latitude, minLat, thres)+margin;
-        v.x = project2map(v.longitude , minLon, thres)+margin;
+        v.y = project2map(v.latitude , minLat, thres)+margin;
+        v.x = project2map(v.longitude, minLon, thres)+margin;
 
-
-        if(v.y - radius >= 0 && v.y - radius < image.width() && v.x - radius >= 0 && v.x - radius < image.height()) {
-            temp = image.height()-v.x;
-            v.x = v.y;
-            v.y = temp;
+        if(v.x - radius >= 0 && v.x - radius < image.width() && v.y - radius >= 0 && v.y - radius < image.height()) {
+//            v.y = image.height()-v.y;
             QGraphicsItem *item = new house(gold, v.x-radius, v.y-radius, 2*radius+1, v.id);
             item->setPos(QPointF(v.x-radius, v.y-radius));
             scene->addItem(item);
@@ -442,6 +439,7 @@ void MainWindow::populateScene(int algo){
 
     QPixmap pixmap = QPixmap::fromImage(image);
     QGraphicsPixmapItem *pixmapItem = scene->addPixmap(pixmap);
+
 
     qDebug() << ((algo==0)? "Default" : (algo==1)? "BFS" : (algo==2)? "Dijkstra" : (algo==3)? "A Star" : "Error");
 }
