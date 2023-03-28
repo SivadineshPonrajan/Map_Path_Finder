@@ -227,7 +227,7 @@ void MainWindow::populateScene(int algo){
 //    QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(), "Text Files (*.txt)");
 //    std::ifstream file(filePath.toStdString());
 
-    std::ifstream file("C:/Users/sivad/Desktop/Gitnow/Map_Path_Finder/chip/graph_dc_area.2022-03-11.txt");
+    std::ifstream file("/Users/Pipo/Documents/University/Embedded C++/Map_Path_Finder/dataset/graph_dc_area.2022-03-11.txt");
 
     if (!file.is_open()) {
         QMessageBox messageBox;
@@ -347,10 +347,13 @@ void MainWindow::populateScene(int algo){
         painter.drawLine(vertices[src].x, vertices[src].y, vertices[dest].x, vertices[dest].y);
     }
 
-    Graph graph("C:/Users/sivad/Desktop/Gitnow/Map_Path_Finder/chip/graph_dc_area.2022-03-11.txt");
+    Graph graph("/Users/Pipo/Documents/University/Embedded C++/Map_Path_Finder/dataset/graph_dc_area.2022-03-11.txt");
     if(algo == 1){
         auto path = graph.bfs(startNode, endNode);
         qDebug() << "path size: " << path.size();
+
+        for(auto v: graph.currentlyVisitedVertices)
+            qDebug() << v;
         plotVertex edgefrom = vertices[startNode];
         plotVertex edgeto;
         QPen epen(green, 5);

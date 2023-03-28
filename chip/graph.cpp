@@ -177,7 +177,7 @@ std::vector<std::pair<int, double>> Graph::bfs(int start, int goal){
         {
             int vprev;
             std::cout << "Total visited vertex: " << numberOfVertices << std::endl;
-
+            currentlyVisitedVertices = closed_set;
             return backtrace(parent, start, goal);
         }
         active_queue.pop_front();

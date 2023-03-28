@@ -40,6 +40,8 @@ public:
     std::vector<Edge> edges;
     std::multimap<int, Edge> edgeLookUp;
 
+    std::set<int> currentlyVisitedVertices;
+
     Graph(std::string file);
 
     void read_file(std::string fileName);
