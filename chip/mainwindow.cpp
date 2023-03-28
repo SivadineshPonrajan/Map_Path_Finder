@@ -35,6 +35,11 @@ int startNode = 0;
 int endNode = 0;
 int radius = thres/10;
 
+double minLat = 38.8135;
+double maxLat = 38.9945;
+double minLon = -77.1166;
+double maxLon = -76.9105;
+
 using namespace std;
 View* view;
 MainWindow::MainWindow(QWidget *parent)
@@ -249,64 +254,7 @@ void MainWindow::populateScene(int algo){
     }
 
 
-//    std::vector<plotVertex> nodeVec;
-
     std::vector<Point> newPlot;
-
-
-
-
-
-    double minLat = std::numeric_limits<double>::max();
-    double maxLat = std::numeric_limits<double>::lowest();
-    double minLon = std::numeric_limits<double>::max();
-    double maxLon = std::numeric_limits<double>::lowest();
-
-    std::string line;
-    while (std::getline(file, line)) {
-        if(line[0]=='V'){
-            std::istringstream iss(line);
-            std::string v, vid, lon, lat, x, y;
-            std::getline(iss, v, ',');
-            std::getline(iss, vid, ',');
-            std::getline(iss, lon, ',');
-            std::getline(iss, lat, ',');
-            std::getline(iss, x, ',');
-            std::getline(iss, y, ',');
-
-//            if(std::stoi(vid)>=193 && std::stoi(vid)<=196){
-//                plotVertex vnode{ std::stoi(vid), std::stod(lat), std::stod(lon), 0, 0, 0, 0 };
-//                vertices[std::stoi(vid)] = vnode;
-                if (std::stod(lat) < minLat) {
-                    minLat = std::stod(lat);
-                }
-                if (std::stod(lat) > maxLat) {
-                    maxLat = std::stod(lat);
-                }
-                if (std::stod(lon) < minLon) {
-                    minLon = std::stod(lon);
-                }
-                if (std::stod(lon) > maxLon) {
-                    maxLon = std::stod(lon);
-                }
-//            }
-        }else if(line[0]=='E'){
-            std::istringstream iss(line);
-            std::string e, esrc, edest, edist, ename, e0, e1;
-            std::getline(iss, e, ',');
-            std::getline(iss, esrc, ',');
-            std::getline(iss, edest, ',');
-            std::getline(iss, edist, ',');
-            std::getline(iss, ename, ',');
-            std::getline(iss, e0, ',');
-            std::getline(iss, e1, ',');
-
-//            if(std::stoi(esrc)>=193 && std::stoi(esrc)<=196 && std::stoi(edest)>=193 && std::stoi(edest)<=196){
-
-//            }
-        }
-    }
-
 
 
     int xdiff = (maxLat - minLat)*1000;
@@ -354,8 +302,9 @@ void MainWindow::populateScene(int algo){
 
     QPen epen(green, 7);
     radius = radius*1.4;
+    std::vector<std::pair<int, double>> path;
     if(algo == 1){
-        auto path = graph.bfs(startNode, endNode);
+        path = graph.bfs(startNode, endNode);
         qDebug() << "path size: " << path.size();
 
         for(auto v: graph.currentlyVisitedVertices){
@@ -378,7 +327,7 @@ void MainWindow::populateScene(int algo){
             edgefrom = edgeto;
         }
     }else if(algo == 2){
-        auto path = graph.dijkstra(startNode, endNode);
+        path = graph.dijkstra(startNode, endNode);
         qDebug() << "path size: " << path.size();
 
         for(auto v: graph.currentlyVisitedVertices){
@@ -401,7 +350,7 @@ void MainWindow::populateScene(int algo){
             edgefrom = edgeto;
         }
     }else if(algo == 3){
-        auto path = graph.astar(startNode, endNode);
+        path = graph.astar(startNode, endNode);
         qDebug() << "path size: " << path.size();
 
         for(auto v: graph.currentlyVisitedVertices){
@@ -426,6 +375,9 @@ void MainWindow::populateScene(int algo){
     }
 
     qDebug() << "Actual Vertices count: " << graph.vertices.size() ;
+
+    qDebug() << "PAth lenght: " << graph.getPathLength(path);
+
 
     iheight = image.height();
     radius = thres/10;

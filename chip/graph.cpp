@@ -18,7 +18,6 @@ void Graph::read_file(std::string fileName)
     double sum_lat=0;
     double sum_long=0;
 
-
     while (std::getline(fin, line))
     {
         // read csv format
@@ -348,7 +347,18 @@ void Graph::printPath(std::vector<std::pair<int,double>> path){
     for (const auto node : path)
     {
         accumulatedLength += node.second;
-//        std::cout << "Vertex[" << std::setw(4) << count << "]" << " = " << std::setw(8) << node.first << ", length = " << std::setw(12) << std::setprecision(2) << std::fixed << accumulatedLength << std::endl;
+        std::cout << "Vertex[" << std::setw(4) << count << "]" << " = " << std::setw(8) << node.first << ", length = " << std::setw(12) << std::setprecision(2) << std::fixed << accumulatedLength << std::endl;
         count++;
     }
+}
+
+double Graph::getPathLength(std::vector<std::pair<int,double>> path){
+    int count = 1;
+    double accumulatedLength = 0;
+    for (const auto node : path)
+    {
+        accumulatedLength += node.second;
+        count++;
+    }
+    return accumulatedLength;
 }

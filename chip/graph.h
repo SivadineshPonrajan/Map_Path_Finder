@@ -41,6 +41,7 @@ public:
     std::multimap<int, Edge> edgeLookUp;
 
     std::set<int> currentlyVisitedVertices;
+    int timeElapsed;
 
     Graph(std::string file);
     Graph(){};
@@ -72,4 +73,6 @@ public:
     std::vector<std::pair<int, double>> astar(int start, int goal);
 
     void printPath(std::vector<std::pair<int,double>> path);
+
+    double getPathLength(std::vector<std::pair<int,double>> path);
 };
