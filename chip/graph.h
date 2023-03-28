@@ -43,6 +43,7 @@ public:
     std::set<int> currentlyVisitedVertices;
 
     Graph(std::string file);
+    Graph(){};
 
     void read_file(std::string fileName);
 

@@ -16,6 +16,9 @@ struct Vertex
     double estimate_;
     std::set<int> adjacencyList_;
 
+    double xView_;
+    double yView_;
+
 
     // DEFAULT CONSTRUCTOR IS NEEDED FOR NODE MAP
     Vertex() {

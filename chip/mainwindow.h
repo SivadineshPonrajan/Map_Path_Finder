@@ -6,6 +6,8 @@
 #include "view.h"
 #include <QWidget>
 
+#include "graph.h"
+
 QT_BEGIN_NAMESPACE
 class QGraphicsScene;
 class QSplitter;
@@ -25,6 +27,9 @@ public:
     void displayPath();
     void addToScene(QGraphicsItem* itemToAdd);
     void removeFromScene(QGraphicsItem* itemToRemove);
+    int findNearest(QPointF point);
+
+    Graph graph;
 private:
     QGraphicsScene *scene;
     QSplitter *h1Splitter;
