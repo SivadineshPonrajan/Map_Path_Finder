@@ -22,6 +22,7 @@ public:
     void populateScene(int data);
     void ResetAlgo();
     void SelectAlgo(int index);
+    void displayPath();
 private:
     QGraphicsScene *scene;
     QSplitter *h1Splitter;

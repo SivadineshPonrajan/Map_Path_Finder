@@ -259,7 +259,29 @@ void View::onComboBoxSelected(int index){
 void View::mapSelected()
 {
     MainWindow *mainWindow = qobject_cast<MainWindow *>(parent());
-    mainWindow->SelectAlgo(comboBox->currentIndex());
+//    mainWindow->SelectAlgo(comboBox->currentIndex());
+//    mainWindow->displayPath();
+
+    QObject* p = parent();
+
+    while (1)
+    {
+        MainWindow* main = qobject_cast<MainWindow *>(p);
+        if (main != nullptr){
+            qDebug() << "mainwindow";
+            main->displayPath();
+            break;
+        }
+        else{
+            qDebug() << "not mainwindow";
+            p = p->parent();
+            if (p == nullptr)
+                break;
+        }
+
+
+    }
+    qDebug() << parent()->parent()->parent()->metaObject()->className();
 //    qDebug() << "Map Selected: " << comboBox->currentIndex();
 }
 

@@ -222,6 +222,11 @@ void MainWindow::ResetAlgo(){
 //    MainWindow::populateScene(0);
 }
 
+void MainWindow::displayPath(){
+    qDebug() << "display Path";
+    populateScene(view->getComboBox()->currentIndex());
+}
+
 void MainWindow::populateScene(int algo){
 
 //    QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(), "Text Files (*.txt)");
