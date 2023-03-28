@@ -169,34 +169,7 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
           //          end
       }
       else{
-          QMessageBox::StandardButton reply;
-          reply = QMessageBox::question(NULL, "Reset Flags Alert", "Want to map the algorithm or reset the start and the end flag points?", QMessageBox::Yes|QMessageBox::No);
-
-              if (reply == QMessageBox::Yes) {
-                  if(view->getComboBox()->currentIndex()==0){
-                      coords->setPlainText("");
-                      mapPoints.clear();
-                      scene->removeItem(startFlag);
-                      scene->removeItem(startItem);
-                      scene->removeItem(endFlag);
-                      scene->removeItem(endItem);
-                      scene->clear();
-                      qDebug() << "Removed all Elements";
-                      populateScene(0);
-                  }else{
-                      scene->addItem(startFlag);
-                      scene->addItem(startItem);
-                      scene->addItem(endFlag);
-                      scene->addItem(endItem);
-                      scene->addItem(coords);
-                      populateScene(view->getComboBox()->currentIndex());
-                  }
-
-              }
-              else {
-                  qDebug() << "Nothing happened";
-              }
-
+          qDebug() << "Nothing happened";
       }
       qDebug() << "The map Vector" << mapPoints;
     }else
@@ -206,20 +179,59 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
 void MainWindow::SelectAlgo(int index){
     qDebug() << "Selected Algo: " << index;
+    QMessageBox::StandardButton reply;
+    if(mapPoints.size()==2){
+        if(view->getComboBox()->currentIndex()==0){
+            reply = QMessageBox::information(this, "Select Algorithm : Warning", "Select the algorithmn in the dropdown before mapping", QMessageBox::Ok);
+
+        }else{
+            addToScene(startFlag);
+            addToScene(startItem);
+            addToScene(endFlag);
+            addToScene(endItem);
+            addToScene(coords);
+            populateScene(view->getComboBox()->currentIndex());
+    //        reply = QMessageBox::information(this, "Al", "Message", QMessageBox::Ok);
+        }
+    }else{
+        reply = QMessageBox::information(this, "Select Algorithm : Warning", "Start nodes and the end nodes are not selected in the map", QMessageBox::Ok);
+    }
+}
+
+void MainWindow::removeFromScene(QGraphicsItem* itemToRemove){
+    QList<QGraphicsItem*> itemList = scene->items();
+    if(itemList.contains(itemToRemove))
+    {
+        scene->removeItem(itemToRemove);
+    }
+}
+
+void MainWindow::addToScene(QGraphicsItem* itemToAdd){
+    QList<QGraphicsItem*> itemList = scene->items();
+    if(!itemList.contains(itemToAdd))
+    {
+        scene->removeItem(itemToAdd);
+    }
 }
 
 void MainWindow::ResetAlgo(){
-//    mapPoints.clear();
 //    QGraphicsView* graphicsView = view->view();
-//    graphicsView->rotate(10);
 //    graphicsView->scene()->removeItem(startFlag);
 
-//    scene->removeItem(startFlag);
-//    scene->removeItem(startItem);
-//    scene->removeItem(endFlag);
-//    scene->removeItem(endItem);
+    mapPoints.clear();
+    removeFromScene(coords);
+    removeFromScene(startFlag);
+    removeFromScene(startItem);
+    removeFromScene(endFlag);
+    removeFromScene(endItem);
+    scene->clear();
     qDebug() << "Map Resetted!";
-//    MainWindow::populateScene(0);
+    populateScene(0);
+}
+
+void MainWindow::displayPath(){
+    qDebug() << "display Path";
+    populateScene(view->getComboBox()->currentIndex());
 }
 
 void MainWindow::populateScene(int algo){

@@ -213,9 +213,12 @@ void View::toggleAntialiasing()
 void View::print()
 {
 #if defined(QT_PRINTSUPPORT_LIB) && QT_CONFIG(printdialog)
-    QPrinter printer;
-    QPrintDialog dialog(&printer, this);
-    if (dialog.exec() == QDialog::Accepted) {
+    QString fileName = QFileDialog::getSaveFileName(this, tr("Save PDF"), QString(), tr("PDF Files (*.pdf)"));
+    if (!fileName.isEmpty()) {
+        QPrinter printer(QPrinter::PrinterResolution);
+        printer.setOutputFormat(QPrinter::PdfFormat);
+        printer.setOutputFileName(fileName);
+
         QPainter painter(&printer);
         graphicsView->render(&painter);
     }
@@ -258,16 +261,51 @@ void View::onComboBoxSelected(int index){
 
 void View::mapSelected()
 {
-    MainWindow *mainWindow = qobject_cast<MainWindow *>(parent()->parent()->parent());
-    mainWindow->populateScene(comboBox->currentIndex());
-//    qDebug() << "Map Selected: " << comboBox->currentIndex();
+//    mainWindow->SelectAlgo(comboBox->currentIndex());
+//    mainWindow->displayPath();
+
+    QObject* p = parent();
+
+    while (1)
+    {
+        MainWindow* main = qobject_cast<MainWindow *>(p);
+        if (main != nullptr){
+            qDebug() << "mainwindow";
+            main->SelectAlgo(comboBox->currentIndex());
+            break;
+        }
+        else{
+            qDebug() << "not mainwindow";
+            p = p->parent();
+            if (p == nullptr)
+                break;
+        }
+    }
+    qDebug() << parent()->parent()->parent()->metaObject()->className();
 }
 
 void View::mapResetted()
 {
+    QObject* p = parent();
+
     comboBox->setCurrentIndex(0);
-    MainWindow *mainWindow = qobject_cast<MainWindow *>(parent()->parent()->parent());
-    mainWindow->populateScene(0);
+    while (1)
+    {
+        MainWindow* main = qobject_cast<MainWindow *>(p);
+        if (main != nullptr){
+            qDebug() << "mainwindow";
+            main->ResetAlgo();
+            break;
+        }
+        else{
+            qDebug() << "not mainwindow";
+            p = p->parent();
+            if (p == nullptr)
+                break;
+        }
+
+
+    }
 //    qDebug() << "Map Resetted!";
 }
 
