@@ -245,14 +245,16 @@ void MainWindow::populateScene(int algo){
 //    QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(), "Text Files (*.txt)");
 //    std::ifstream file(filePath.toStdString());
 
-    std::ifstream file("/Users/Pipo/Documents/University/Embedded C++/Map_Path_Finder/dataset/graph_dc_area.2022-03-11.txt");
+//    std::ifstream file("/Users/Pipo/Documents/University/Embedded C++/Map_Path_Finder/dataset/graph_dc_area.2022-03-11.txt");
 
-    if (!file.is_open()) {
-        QMessageBox messageBox;
-        messageBox.critical(0,"Error","Failed to open the file");
-        messageBox.setFixedSize(500,200);
-    }
+//    if (!file.is_open()) {
+//        QMessageBox messageBox;
+//        messageBox.critical(0,"Error","Failed to open the file");
+//        messageBox.setFixedSize(500,200);
+//    }
 
+//    for (auto item : scene->items())
+//        scene->removeItem(item);
 
     std::vector<Point> newPlot;
 
@@ -303,56 +305,18 @@ void MainWindow::populateScene(int algo){
     QPen epen(green, 7);
     radius = radius*1.4;
     std::vector<std::pair<int, double>> path;
+    auto start = std::chrono::high_resolution_clock::now();
     if(algo == 1){
         path = graph.bfs(startNode, endNode);
-        qDebug() << "path size: " << path.size();
-
-        for(auto v: graph.currentlyVisitedVertices){
-            QGraphicsItem *item = new house(neonBlue, graph.vertices[v].xView_-radius, graph.vertices[v].yView_-radius, 2*radius+1, v);
-            item->setPos(QPointF(graph.vertices[v].xView_-radius, graph.vertices[v].yView_-radius));
-            scene->addItem(item);
-        }
-        Vertex edgefrom = graph.vertices[startNode];
-        Vertex edgeto;
-        painter.setPen(epen);
-        for (auto & element : path) {
-            auto id = graph.vertices[element.first];
-
-            QGraphicsItem *item = new house(red, graph.vertices[element.first].xView_-radius, graph.vertices[element.first].yView_-radius, 2*radius+1, element.first);
-            item->setPos(QPointF(graph.vertices[element.first].xView_-radius, graph.vertices[element.first].yView_-radius));
-            scene->addItem(item);
-            edgeto = graph.vertices[element.first];
-            painter.drawLine(edgefrom.xView_, edgefrom.yView_, edgeto.xView_, edgeto.yView_);
-            scene->update();
-            edgefrom = edgeto;
-        }
     }else if(algo == 2){
         path = graph.dijkstra(startNode, endNode);
-        qDebug() << "path size: " << path.size();
-
-        for(auto v: graph.currentlyVisitedVertices){
-            QGraphicsItem *item = new house(neonBlue, graph.vertices[v].xView_-radius, graph.vertices[v].yView_-radius, 2*radius+1, v);
-            item->setPos(QPointF(graph.vertices[v].xView_-radius, graph.vertices[v].yView_-radius));
-            scene->addItem(item);
-        }
-        Vertex edgefrom = graph.vertices[startNode];
-        Vertex edgeto;
-        painter.setPen(epen);
-        for (auto & element : path) {
-            auto id = graph.vertices[element.first];
-
-            QGraphicsItem *item = new house(red, graph.vertices[element.first].xView_-radius, graph.vertices[element.first].yView_-radius, 2*radius+1, element.first);
-            item->setPos(QPointF(graph.vertices[element.first].xView_-radius, graph.vertices[element.first].yView_-radius));
-            scene->addItem(item);
-            edgeto = graph.vertices[element.first];
-            painter.drawLine(edgefrom.xView_, edgefrom.yView_, edgeto.xView_, edgeto.yView_);
-            scene->update();
-            edgefrom = edgeto;
-        }
     }else if(algo == 3){
         path = graph.astar(startNode, endNode);
-        qDebug() << "path size: " << path.size();
+    }
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 
+    if (algo != 0){
         for(auto v: graph.currentlyVisitedVertices){
             QGraphicsItem *item = new house(neonBlue, graph.vertices[v].xView_-radius, graph.vertices[v].yView_-radius, 2*radius+1, v);
             item->setPos(QPointF(graph.vertices[v].xView_-radius, graph.vertices[v].yView_-radius));
@@ -372,11 +336,18 @@ void MainWindow::populateScene(int algo){
             scene->update();
             edgefrom = edgeto;
         }
+
     }
+    qDebug() << "path size: " << path.size();
+
 
     qDebug() << "Actual Vertices count: " << graph.vertices.size() ;
 
     qDebug() << "PAth lenght: " << graph.getPathLength(path);
+
+    qDebug() << "PAth lenght: " << graph.currentlyVisitedVertices.size();
+
+    qDebug() << "Info: image calculated in: " << duration.count() << " us.";
 
 
     iheight = image.height();

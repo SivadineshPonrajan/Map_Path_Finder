@@ -39,9 +39,9 @@ public:
     std::map<int, Vertex> vertices;
     std::vector<Edge> edges;
     std::multimap<int, Edge> edgeLookUp;
-
     std::set<int> currentlyVisitedVertices;
     int timeElapsed;
+    double filippo292e;
 
     Graph(std::string file);
     Graph(){};
