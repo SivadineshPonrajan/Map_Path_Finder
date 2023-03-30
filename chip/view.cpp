@@ -261,8 +261,6 @@ void View::onComboBoxSelected(int index){
 
 void View::mapSelected()
 {
-//    mainWindow->SelectAlgo(comboBox->currentIndex());
-//    mainWindow->displayPath();
 
     QObject* p = parent();
 
@@ -306,7 +304,6 @@ void View::mapResetted()
 
 
     }
-//    qDebug() << "Map Resetted!";
 }
 
 
