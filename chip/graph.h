@@ -41,7 +41,6 @@ public:
     std::multimap<int, Edge> edgeLookUp;
     std::set<int> currentlyVisitedVertices;
     int timeElapsed;
-    double filippo292e;
     double minLat;
     double maxLat;
     double minLon;

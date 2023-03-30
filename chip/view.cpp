@@ -128,10 +128,7 @@ View::View(const QString &name, QWidget *parent)
     labelLayout->addWidget(comboBox);
     labelLayout->addWidget(map);
     labelLayout->addWidget(resetMap);
-//    labelLayout->addWidget(selectModeButton);
-//    labelLayout->addWidget(dragModeButton);
     labelLayout->addStretch();
-//    labelLayout->addWidget(antialiasButton);
     labelLayout->addWidget(printButton);
 
     QGridLayout *topLayout = new QGridLayout;
