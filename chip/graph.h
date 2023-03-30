@@ -42,6 +42,10 @@ public:
     std::set<int> currentlyVisitedVertices;
     int timeElapsed;
     double filippo292e;
+    double minLat;
+    double maxLat;
+    double minLon;
+    double maxLon;
 
     Graph(std::string file);
     Graph(){};

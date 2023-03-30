@@ -1,6 +1,6 @@
 RESOURCES += images.qrc
 
-HEADERS += mainwindow.h view.h chip.h \
+HEADERS += mainwindow.h view.h \
     edge.h \
     graph.h \
     house.h \
@@ -10,7 +10,7 @@ SOURCES += main.cpp \
     graph.cpp \
     flagitem.cpp \
     house.cpp
-SOURCES += mainwindow.cpp view.cpp chip.cpp
+SOURCES += mainwindow.cpp view.cpp
 
 QT += widgets
 qtHaveModule(printsupport): QT += printsupport

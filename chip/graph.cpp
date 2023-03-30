@@ -1,7 +1,6 @@
 #include "graph.h"
 
 // struct Graph
-
 Graph::Graph(std::string file) {
     read_file(file);
 }
@@ -18,6 +17,14 @@ void Graph::read_file(std::string fileName)
     double sum_lat=0;
     double sum_long=0;
 
+    double temp_lat;
+    double temp_long;
+
+    minLat = std::numeric_limits<double>::max();
+    maxLat = std::numeric_limits<double>::lowest();
+    minLon = std::numeric_limits<double>::max();
+    maxLon = std::numeric_limits<double>::lowest();
+
     while (std::getline(fin, line))
     {
         // read csv format
@@ -29,8 +36,29 @@ void Graph::read_file(std::string fileName)
         // vertex
         if (row[0] == "V")
         {
-            sum_lat += std::stod(row[3]);
-            sum_long += std::stod(row[2]);
+            temp_lat = std::stod(row[3]);
+            temp_long = std::stod(row[2]);
+            sum_lat += temp_lat;
+            sum_long += temp_long;
+
+            if (temp_lat < minLat) {
+                minLat = temp_lat;
+            }
+            if (temp_lat > maxLat) {
+                maxLat = temp_lat;
+            }
+            if (temp_long < minLon) {
+                minLon = temp_long;
+            }
+            if (temp_long > maxLon) {
+                maxLon = temp_long;
+            }
+
+//            minLat = 38.8135;
+//            maxLat = 38.9945;
+//            minLon = -77.1166;
+//            maxLon = -76.9105;
+
 
             addVertex(row);
         }
@@ -347,7 +375,7 @@ void Graph::printPath(std::vector<std::pair<int,double>> path){
     for (const auto node : path)
     {
         accumulatedLength += node.second;
-        std::cout << "Vertex[" << std::setw(4) << count << "]" << " = " << std::setw(8) << node.first << ", length = " << std::setw(12) << std::setprecision(2) << std::fixed << accumulatedLength << std::endl;
+//        std::cout << "Vertex[" << std::setw(4) << count << "]" << " = " << std::setw(8) << node.first << ", length = " << std::setw(12) << std::setprecision(2) << std::fixed << accumulatedLength << std::endl;
         count++;
     }
 }

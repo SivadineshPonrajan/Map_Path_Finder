@@ -24,40 +24,7 @@ void house::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWi
     QRectF rec = boundingRect();
     QBrush brush (this->color);
 
-//    QColor fillColor = (option->state & QStyle::State_Selected) ? color.darker(150) : color;
-//    if (option->state & QStyle::State_MouseOver)
-//        fillColor = fillColor.lighter(125);
-
-//    if(pressed == true){
-////        brush.setColor(Qt::green);
-//        qDebug() << this->nodeid;
-//    }
-//    else{
-//        brush.setColor(this->color);
-//    }
-
     painter->fillRect(rec,brush);
     painter->drawRect(rec);
 }
 
-//void house::mousePressEvent(QGraphicsSceneMouseEvent *event) {
-//    pressed = true;
-//    update();
-//    QGraphicsItem::mousePressEvent(event);
-//}
-
-//void house::mouseReleaseEvent(QGraphicsSceneMouseEvent *event) {
-//    pressed = false;
-//    update();
-//    QGraphicsItem::mouseReleaseEvent(event);
-//}
-
-//void house::hoverEnterEvent(QGraphicsSceneHoverEvent* event) {
-//    ishovered = true;
-//    update(); // Call update() to trigger a repaint
-//}
-
-//void house::hoverLeaveEvent(QGraphicsSceneHoverEvent* event) {
-//    ishovered = false;
-//    update(); // Call update() to trigger a repaint
-//}

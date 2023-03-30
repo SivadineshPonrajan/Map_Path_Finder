@@ -35,10 +35,12 @@ int startNode = 0;
 int endNode = 0;
 int radius = thres/10;
 
-double minLat = 38.8135;
-double maxLat = 38.9945;
-double minLon = -77.1166;
-double maxLon = -76.9105;
+double minLat;
+double maxLat;
+double minLon;
+double maxLon;
+
+QMessageBox::StandardButton reply;
 
 using namespace std;
 View* view;
@@ -46,7 +48,23 @@ MainWindow::MainWindow(QWidget *parent)
     : QWidget(parent), scene(new QGraphicsScene(this))
     , h1Splitter(new QSplitter(this)), h2Splitter(new QSplitter(this))
 {
-    graph = Graph{"/Users/Pipo/Documents/University/Embedded C++/Map_Path_Finder/dataset/graph_dc_area.2022-03-11.txt"};
+
+    QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(), "Text Files (*.txt)");
+    std::ifstream file(filePath.toStdString());
+
+    graph = Graph{filePath.toStdString()};
+
+//    graph = Graph{"C:/Users/sivad/Desktop/Gitnow/Map_Path_Finder/dataset/graph_dc_area.2022-03-11.txt"};
+
+    minLat = graph.minLat;
+    maxLat = graph.maxLat;
+    minLon = graph.minLon;
+    maxLon = graph.maxLon;
+
+    qDebug() << "Min latitude: " << minLat;
+    qDebug() << "Max latitude: " << maxLat;
+    qDebug() << "Min longitude: " << minLon;
+    qDebug() << "Max longitude: " << maxLon;
 
     populateScene(0);
 
@@ -69,28 +87,6 @@ MainWindow::MainWindow(QWidget *parent)
     setWindowTitle(tr("Embedded C++ Project"));
 }
 
-//struct plotVertex {
-//    int id;
-//    double latitude;
-//    double longitude;
-//    int x;
-//    int y;
-//    int xx;
-//    int yy;
-//};
-
-//struct plotEdge {
-//    int src;
-//    int dest;
-//    double dist;
-//    std::string name;
-//};
-
-struct Point {
-    double x, y;
-};
-
-//std::map<int, plotVertex> vertices;
 
 double project2map(double data, double min, int thres){
     return (int)((data-min)*thres*1000);
@@ -109,7 +105,7 @@ int MainWindow::findNearest(QPointF point){
 
      for (auto& plotVertexPair : graph.vertices) {
          Vertex& plotVertex = plotVertexPair.second;
-         QPointF plotVertexPoint(plotVertex.xView_, plotVertex.yView_);
+         QPointF plotVertexPoint(plotVertex.xView_, iheight-plotVertex.yView_);
          double d = distance(point, plotVertexPoint);
          if (d < minDistance) {
              minDistance = d;
@@ -126,7 +122,6 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
     QGraphicsView* graphicsView = view->view();
 
     if (mouseEvent->button() == Qt::LeftButton) {
-          QPointF nearest;
           QPointF point = graphicsView->mapToScene(mouseEvent->pos());
           qDebug() <<"Click at: "<<point.x()<< " " <<point.y();
           if(mapPoints.size()==0){
@@ -135,13 +130,12 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
               startFlag = new flagItem(point.x(), point.y(), Qt::red);
               scene->addItem(startFlag);
-    //          scene->update();
 
               //          start
               startNode = findNearest(point);
               qDebug() << "Selected node: " << startNode;
-               startItem = new house(Qt::red, graph.vertices[startNode].xView_-radius, graph.vertices[startNode].yView_-radius, 2*radius+1, 1);
-               startItem->setPos(QPointF(graph.vertices[startNode].xView_-radius, graph.vertices[startNode].yView_-radius));
+               startItem = new house(Qt::red, graph.vertices[startNode].xView_-radius, iheight-graph.vertices[startNode].yView_-radius, 2*radius+1, 1);
+               startItem->setPos(QPointF(graph.vertices[startNode].xView_-radius, iheight-graph.vertices[startNode].yView_-radius));
                scene->addItem(startItem);
 
                coords = new QGraphicsTextItem("Start Point = "+QString::number(startNode));
@@ -160,13 +154,12 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
 
               endFlag = new flagItem(point.x(), point.y(), Qt::green);
               scene->addItem(endFlag);
-    //          scene->update();
 
               //          start
                endNode = findNearest(point);
                qDebug() << "Selected node: " << endNode;
-               endItem = new house(Qt::green, graph.vertices[endNode].xView_-radius, graph.vertices[endNode].yView_-radius, 2*radius+1, 1);
-               endItem->setPos(QPointF(graph.vertices[endNode].xView_-radius, graph.vertices[endNode].yView_-radius));
+               endItem = new house(Qt::green, graph.vertices[endNode].xView_-radius, iheight-graph.vertices[endNode].yView_-radius, 2*radius+1, 1);
+               endItem->setPos(QPointF(graph.vertices[endNode].xView_-radius, iheight-graph.vertices[endNode].yView_-radius));
                scene->addItem(endItem);
 
                coords->setPlainText(coords->toPlainText()+", End Point = "+QString::number(endNode));
@@ -174,18 +167,13 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
                scene->update();
               //          end
           }
-          else{
-              qDebug() << "Nothing happened";
-          }
           qDebug() << "The map Vector" << mapPoints;
-        }else
-        qDebug() << "clicked here";
+        }
         }
     }
 
 void MainWindow::SelectAlgo(int index){
     qDebug() << "Selected Algo: " << index;
-    QMessageBox::StandardButton reply;
     if(mapPoints.size()==2){
         if(view->getComboBox()->currentIndex()==0){
             reply = QMessageBox::information(this, "Select Algorithm : Warning", "Select the algorithmn in the dropdown before mapping", QMessageBox::Ok);
@@ -197,10 +185,9 @@ void MainWindow::SelectAlgo(int index){
             addToScene(endItem);
             addToScene(coords);
             populateScene(view->getComboBox()->currentIndex());
-    //        reply = QMessageBox::information(this, "Al", "Message", QMessageBox::Ok);
         }
     }else{
-        reply = QMessageBox::information(this, "Select Algorithm : Warning", "Start nodes and the end nodes are not selected in the map", QMessageBox::Ok);
+        reply = QMessageBox::information(this, "Select Nodes : Warning", "Start nodes and the end nodes are not selected in the map", QMessageBox::Ok);
     }
 }
 
@@ -221,9 +208,6 @@ void MainWindow::addToScene(QGraphicsItem* itemToAdd){
 }
 
 void MainWindow::ResetAlgo(){
-//    QGraphicsView* graphicsView = view->view();
-//    graphicsView->scene()->removeItem(startFlag);
-
     mapPoints.clear();
     removeFromScene(coords);
     removeFromScene(startFlag);
@@ -235,29 +219,7 @@ void MainWindow::ResetAlgo(){
     populateScene(0);
 }
 
-void MainWindow::displayPath(){
-    qDebug() << "display Path";
-    populateScene(view->getComboBox()->currentIndex());
-}
-
 void MainWindow::populateScene(int algo){
-
-//    QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(), "Text Files (*.txt)");
-//    std::ifstream file(filePath.toStdString());
-
-//    std::ifstream file("/Users/Pipo/Documents/University/Embedded C++/Map_Path_Finder/dataset/graph_dc_area.2022-03-11.txt");
-
-//    if (!file.is_open()) {
-//        QMessageBox messageBox;
-//        messageBox.critical(0,"Error","Failed to open the file");
-//        messageBox.setFixedSize(500,200);
-//    }
-
-//    for (auto item : scene->items())
-//        scene->removeItem(item);
-
-    std::vector<Point> newPlot;
-
 
     int xdiff = (maxLat - minLat)*1000;
     int ydiff = (maxLon - minLon)*1000;
@@ -280,16 +242,15 @@ void MainWindow::populateScene(int algo){
     qDebug() << "Img Width: " << image.width();
     qDebug() << "Img Height: " << image.height();
 
-    int count = 0;
+    iheight = image.height();
 
     for (auto& [id, v] : graph.vertices) {
         v.xView_ = project2map(v.long_, minLon, thres)+margin;
         v.yView_  = project2map(v.lat_ , minLat, thres)+margin;
 
         if(v.xView_ - radius >= 0 && v.xView_ - radius < image.width() && v.yView_ - radius >= 0 && v.yView_ - radius < image.height()) {
-//            v.v.yView_ = image.height()-v.v.yView_;
-            QGraphicsItem *item = new house(gold, v.xView_-radius, v.yView_-radius, 2*radius+1, v.uid_);
-            item->setPos(QPointF(v.xView_-radius, v.yView_-radius));
+            QGraphicsItem *item = new house(gold, v.xView_-radius, iheight-v.yView_-radius, 2*radius+1, v.uid_);
+            item->setPos(QPointF(v.xView_-radius, iheight-v.yView_-radius));
             scene->addItem(item);
             scene->update();
         }
@@ -298,9 +259,8 @@ void MainWindow::populateScene(int algo){
     for (auto& [id, e] : graph.edgeLookUp) {
            int src = e.fromID_;
            int dest = e.toID_;
-           painter.drawLine(graph.vertices[src].xView_, graph.vertices[src].yView_, graph.vertices[dest].xView_, graph.vertices[dest].yView_);
+           painter.drawLine(graph.vertices[src].xView_, iheight-graph.vertices[src].yView_, graph.vertices[dest].xView_, iheight-graph.vertices[dest].yView_);
        }
-
 
     QPen epen(green, 7);
     radius = radius*1.4;
@@ -318,8 +278,8 @@ void MainWindow::populateScene(int algo){
 
     if (algo != 0){
         for(auto v: graph.currentlyVisitedVertices){
-            QGraphicsItem *item = new house(neonBlue, graph.vertices[v].xView_-radius, graph.vertices[v].yView_-radius, 2*radius+1, v);
-            item->setPos(QPointF(graph.vertices[v].xView_-radius, graph.vertices[v].yView_-radius));
+            QGraphicsItem *item = new house(neonBlue, graph.vertices[v].xView_-radius, iheight-graph.vertices[v].yView_-radius, 2*radius+1, v);
+            item->setPos(QPointF(graph.vertices[v].xView_-radius, iheight-graph.vertices[v].yView_-radius));
             scene->addItem(item);
         }
         Vertex edgefrom = graph.vertices[startNode];
@@ -328,36 +288,36 @@ void MainWindow::populateScene(int algo){
         for (auto & element : path) {
             auto id = graph.vertices[element.first];
 
-            QGraphicsItem *item = new house(red, graph.vertices[element.first].xView_-radius, graph.vertices[element.first].yView_-radius, 2*radius+1, element.first);
-            item->setPos(QPointF(graph.vertices[element.first].xView_-radius, graph.vertices[element.first].yView_-radius));
+            QGraphicsItem *item = new house(red, graph.vertices[element.first].xView_-radius, iheight-graph.vertices[element.first].yView_-radius, 2*radius+1, element.first);
+            item->setPos(QPointF(graph.vertices[element.first].xView_-radius, iheight-graph.vertices[element.first].yView_-radius));
             scene->addItem(item);
             edgeto = graph.vertices[element.first];
-            painter.drawLine(edgefrom.xView_, edgefrom.yView_, edgeto.xView_, edgeto.yView_);
+            painter.drawLine(edgefrom.xView_, iheight-edgefrom.yView_, edgeto.xView_, iheight-edgeto.yView_);
             scene->update();
             edgefrom = edgeto;
         }
 
+        reply = QMessageBox::information(this, "Search Algorithm Result", "Info: The path compute time: " + QString::number(duration.count()) + " us." + "\nThe number of vertices in the path: " + QString::number(path.size()) + "\nThe length of the path: " + QString::number(graph.getPathLength(path)) + "\nTotal number of search vertices: " + QString::number(graph.currentlyVisitedVertices.size()+1), QMessageBox::Ok);
+
+        qDebug() << "Info: image calculated in: " << duration.count() << " us." << "\nThe number of vertices in the path: ?" << "\nThe length of the Path: " << graph.getPathLength(path) << "\nTotal number of search vertices: " << graph.currentlyVisitedVertices.size() ;
+
     }
     qDebug() << "path size: " << path.size();
 
-
     qDebug() << "Actual Vertices count: " << graph.vertices.size() ;
 
-    qDebug() << "PAth lenght: " << graph.getPathLength(path);
+    qDebug() << "Path length: " << graph.getPathLength(path);
 
-    qDebug() << "PAth lenght: " << graph.currentlyVisitedVertices.size();
+    qDebug() << "Path length: " << graph.currentlyVisitedVertices.size();
 
     qDebug() << "Info: image calculated in: " << duration.count() << " us.";
 
-
-    iheight = image.height();
     radius = thres/10;
 
     painter.end();
 
     QPixmap pixmap = QPixmap::fromImage(image);
     QGraphicsPixmapItem *pixmapItem = scene->addPixmap(pixmap);
-
 
     qDebug() << ((algo==0)? "Default" : (algo==1)? "BFS" : (algo==2)? "Dijkstra" : (algo==3)? "A Star" : "Error");
 }
