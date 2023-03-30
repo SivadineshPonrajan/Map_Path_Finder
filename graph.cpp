@@ -88,21 +88,24 @@ void Graph::addEdge(std::vector<std::string> row){
     
     int fromID = std::stoi(row[1]);
     int toID = std::stoi(row[2]);
-    double length = std::stod(row[3]);
+    double length;
+    
+    if (row[3]!="")
+    {
+        length=std::stod(row[3]);
+    }
+    // not used since all edges provide a length
+    else{
+        double x_term = pow((vertices[fromID].x_ - vertices[toID].x_), 2);
+        // cout << "xterm " << x_term << endl;
+        double y_term = pow((vertices[fromID].y_ - vertices[toID].y_), 2);
 
-    double x_term = pow((vertices[fromID].x_ - vertices[toID].x_), 2);
-    // cout << "xterm " << x_term << endl;
-    double y_term = pow((vertices[fromID].y_ - vertices[toID].y_), 2);
+        length = sqrt(x_term+y_term);
+    }
 
-    double weight = sqrt(x_term+y_term);
-
+    
     vertices[fromID].adjacencyList_.insert(toID);
-
-
-    // TO SORT OR NOT TO SORT, THAT IS THE QUESTION -> no more sorting needed with set since its autosorted
-    // std::sort(vertices[fromID].adjacencyList_.begin(), vertices[fromID].adjacencyList_.end());
-
-    edgeLookUp.insert({std::stoi(row[1]), Edge(fromID, toID, length, weight)});
+    edgeLookUp.insert({std::stoi(row[1]), Edge(fromID, toID, length)});
 }
 
 
@@ -142,11 +145,11 @@ std::vector<std::pair<int, double>> Graph::backtrace(const std::map<int, int> &p
     
     while(prevNode != start)
     {
-        path.push_back(std::make_pair(currentNode, getLength(prevNode, currentNode)));
+        path.push_back(std::make_pair(currentNode, get_edge_weight(prevNode, currentNode)));
         currentNode = prevNode;
         prevNode = parents.at(currentNode);
     }
-    path.push_back(std::make_pair(currentNode, getLength(prevNode, currentNode)));
+    path.push_back(std::make_pair(currentNode, get_edge_weight(prevNode, currentNode)));
     path.push_back(std::make_pair(start,0));
 
     std::reverse(path.begin(), path.end());
@@ -209,7 +212,7 @@ std::vector<std::pair<int, double>> Graph::dijkstra(int start, int goal){
     std::map<int, int> parent;
     int numberOfVertices = 0;
 
-    auto mycompare = [this](int a, int b) -> bool {
+    auto compare = [this](int a, int b) -> bool {
         return this->vertices.at(b).get_weight() > this->vertices.at(a).get_weight();
     };
 
@@ -256,9 +259,57 @@ std::vector<std::pair<int, double>> Graph::dijkstra(int start, int goal){
                 vertices[vnext].set_weight(w);
             }
         }
-        std::partial_sort(active_queue.begin(), active_queue.begin()+newVerticesCount, active_queue.end(), mycompare);
-        // std::sort(active_queue.begin(),  active_queue.end(), mycompare);
+        std::partial_sort(active_queue.begin(), active_queue.begin()+newVerticesCount, active_queue.end(), compare);
+        // std::sort(active_queue.begin(),  active_queue.end(), compare);
     }
+    std::cout << "Number of vertices visited: " << numberOfVertices << std::endl;
+
+    return std::vector<std::pair<int, double>>{};
+}
+
+std::vector<std::pair<int, double>> Graph::dijkstra_priority(int start, int goal) {
+    std::priority_queue<std::pair<double, int>, std::vector<std::pair<double, int>>, std::greater<>> active_queue;
+    std::set<int> closed_set;
+    std::map<int, int> parent;
+    int numberOfVertices = 0;
+
+    set_all_vertex_weight_to_max_value();
+
+    vertices[start].set_weight(0);
+    active_queue.push({0, start});
+
+    while (!active_queue.empty()) {
+        double vcurrent_weight = active_queue.top().first;
+        int vcurrent = active_queue.top().second;
+        active_queue.pop();
+
+        if (vcurrent == goal) {
+            std::cout << "Total visited vertex: " << numberOfVertices << std::endl;
+            return backtrace(parent, start, goal);
+        }
+
+        if (closed_set.count(vcurrent) > 0) {
+            continue;
+        }
+
+        closed_set.insert(vcurrent);
+        numberOfVertices++;
+
+        for (auto vnext : vertices[vcurrent].adjacencyList_) {
+            if (closed_set.count(vnext) > 0) {
+                continue;
+            }
+
+            double w = vertices[vcurrent].get_weight() + get_edge_weight(vcurrent, vnext);
+
+            if (vertices[vnext].get_weight() > w) {
+                vertices[vnext].set_weight(w);
+                parent[vnext] = vcurrent;
+                active_queue.push({w, vnext});
+            }
+        }
+    }
+
     std::cout << "Number of vertices visited: " << numberOfVertices << std::endl;
 
     return std::vector<std::pair<int, double>>{};
@@ -279,7 +330,7 @@ std::vector<std::pair<int, double>> Graph::astar(int start, int goal){
     std::map<int, int> parent;
     int numberOfVertices = 0;
 
-    auto mycompare = [this](int a, int b) -> bool {
+    auto compare = [this](int a, int b) -> bool {
         return this->vertices.at(b).get_estimate() > this->vertices.at(a).get_estimate();
     };
 
@@ -329,8 +380,64 @@ std::vector<std::pair<int, double>> Graph::astar(int start, int goal){
                 vertices[vnext].set_estimate(f);
             }
         }
-        std::partial_sort(active_queue.begin(), active_queue.begin()+newVerticesCount, active_queue.end(), mycompare);
-        // std::sort(active_queue.begin(),  active_queue.end(), mycompare);
+        std::partial_sort(active_queue.begin(), active_queue.begin()+newVerticesCount, active_queue.end(), compare);
+        // std::sort(active_queue.begin(),  active_queue.end(), compare);
+    }
+    std::cout << "Number of vertices visited: " << numberOfVertices << std::endl;
+
+    return std::vector<std::pair<int, double>>{};
+}
+
+std::vector<std::pair<int, double>> Graph::astar_priority(int start, int goal) {
+    std::priority_queue<std::pair<double, int>, std::vector<std::pair<double, int>>, std::greater<>> active_queue;
+    std::set<int> closed_set;
+    std::map<int, int> parent;
+    int numberOfVertices = 0;
+
+
+    vertices[start].set_weight(0);
+    active_queue.push({0, start});
+    
+    while (active_queue.size() != 0)
+    {
+        double vcurrent_weight = active_queue.top().first;
+        int vcurrent = active_queue.top().second;
+        active_queue.pop();
+        
+        if (vcurrent == goal)
+        {
+            std::cout << "Total visited vertex: " << numberOfVertices << std::endl;
+            return backtrace(parent, start, goal);
+        }
+
+        if (closed_set.count(vcurrent) > 0) {
+            continue;
+        }
+        closed_set.insert(vcurrent);
+        numberOfVertices++;
+        
+        auto starttime = std::chrono::high_resolution_clock::now();
+
+        int newVerticesCount = 0;
+
+        for (auto vnext :vertices[vcurrent].adjacencyList_)
+        {
+            if (closed_set.count(vnext) > 0) {
+                continue;
+            }
+            auto g = vertices[vcurrent].get_weight() + get_edge_weight(vcurrent, vnext);
+            auto f = g + heuristic_distance_estimator(vnext, goal);
+
+            if (vertices[vnext].get_estimate() > f){
+                vertices[vnext].set_weight(g);
+                vertices[vnext].set_estimate(f);
+                parent[vnext] = vcurrent;
+                active_queue.push({f, vnext});
+
+            }
+        }
+
+        // std::sort(active_queue.begin(),  active_queue.end(), compare);
     }
     std::cout << "Number of vertices visited: " << numberOfVertices << std::endl;
 

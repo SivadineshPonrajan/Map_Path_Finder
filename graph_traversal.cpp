@@ -72,10 +72,32 @@ Settings parse_settings(int argc, const char* argv[]) {
 enum Algorithm {
     bfs,
     dijkstra,
-    astar
+    astar,
+    dijkstra_priority,
+    astar_priority
 };
 
-static const char *algoStr[] = { "bfs", "dijkstra", "astar"};
+static const char *algoStr[] = { "bfs", "dijkstra", "astar", "dijkstra_priority", "astar_priority"};
+
+class Commify {
+private:
+    std::string str_;
+
+public:
+    explicit Commify(int64_t value) {
+        str_ = std::to_string(value);
+        int len = str_.length();
+        for (int i = len - 3; i > 0; i -= 3) {
+            str_.insert(i, ",");
+        }
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const Commify& c) {
+        os << c.str_;
+        return os;
+    }
+};
+
 
 int main(int argc, const char *argv[])
 {
@@ -91,6 +113,7 @@ int main(int argc, const char *argv[])
     Graph g(settings.file);
 
     std::vector<std::pair<int, double>>  path;
+    auto start = std::chrono::high_resolution_clock::now();
     if (settings.algo == algoStr[Algorithm::bfs])
     {
         path = g.bfs(settings.start, settings.end);
@@ -105,8 +128,22 @@ int main(int argc, const char *argv[])
     {
         path = g.astar(settings.start, settings.end);
     }
+    else if (settings.algo == algoStr[Algorithm::dijkstra_priority])
+    {
+        path = g.astar(settings.start, settings.end);
+    }
+    else if (settings.algo == algoStr[Algorithm::astar_priority])
+    {
+        path = g.dijkstra(settings.start, settings.end);
+
+    }
+    auto stop = std::chrono::high_resolution_clock::now();
+
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
 
     g.printPath(path);
+
+    std::cout << "Info: path calculated in " << Commify(duration.count()) << "us" << std::endl;
     
     return 1;
 }

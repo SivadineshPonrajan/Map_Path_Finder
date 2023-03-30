@@ -83,9 +83,8 @@ struct Edge
     int fromID_;
     int toID_;
     double length_;
-    double weight_;
 
-    Edge(int from, int to, double length, double weight) : fromID_(from), toID_(to), length_(length), weight_(weight) {}
+    Edge(int from, int to, double length) : fromID_(from), toID_(to), length_(length) {}
 
     friend std::ostream& operator<< (std::ostream& stream, const Edge& edge) {
         return stream << "From Vertex: " << edge.fromID_ << ", to Vertex: " << edge.toID_ << ", length: " << edge.length_;
@@ -124,6 +123,10 @@ public:
     std::vector<std::pair<int, double>> bfs(int start, int goal);
 
     std::vector<std::pair<int, double>> dijkstra(int start, int goal);
+
+    std::vector<std::pair<int, double>> dijkstra_priority(int start, int goal);
+
+    std::vector<std::pair<int, double>> astar_priority(int start, int goal);
 
     double heuristic_distance_estimator(int fromID, int toID);
 
