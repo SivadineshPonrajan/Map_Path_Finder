@@ -17,14 +17,19 @@ house::house(const QColor &color, int x, int y, int radius, int nodeid)
 }
 
 QRectF house::boundingRect() const {
-    return QRectF(0,0,this->radius,this->radius);
+    return QRectF(x,y,this->radius*2,this->radius*2);
+//    return QRectF(x,y, 5, 5);
 }
 
 void house::paint(QPainter* painter, const QStyleOptionGraphicsItem* option, QWidget* widget){
     QRectF rec = boundingRect();
-    QBrush brush (this->color);
+    QGraphicsEllipseItem ellipse{rec};
 
-    painter->fillRect(rec,brush);
-    painter->drawRect(rec);
+    QBrush brush (this->color);
+    painter->setBrush(brush);
+//    painter->fillRect(rec,brush);
+    painter->drawEllipse(rec);
+
+//    painter->drawRect(ellipse);
 }
 

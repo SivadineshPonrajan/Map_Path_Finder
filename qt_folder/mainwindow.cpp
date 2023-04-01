@@ -33,7 +33,10 @@ int iheight = 0;
 int margin = 100;
 int startNode = 0;
 int endNode = 0;
-int radius = thres/10;
+//int radius = thres/10;
+int nodeRadius = 15;
+int lineThickness = 5;
+int coordinateOffset = 12000;
 
 double minLat;
 double maxLat;
@@ -50,9 +53,12 @@ MainWindow::MainWindow(QWidget *parent)
 {
 
     QString filePath = QFileDialog::getOpenFileName(this, "Open File", QDir::homePath(), "Text Files (*.txt)");
+
     std::ifstream file(filePath.toStdString());
+//    std::ifstream file{"/Users/Pipo/Documents/University/Embedded C++/Map_Path_Finder/console_application_folder/dataset/graph_dc_area.2022-03-11.txt"};
 
     graph = Graph{filePath.toStdString()};
+//    graph = Graph{"/Users/Pipo/graph_dc_area.2022-03-11.txt"};
 
 //    graph = Graph{"C:/Users/sivad/Desktop/Gitnow/Map_Path_Finder/dataset/graph_dc_area.2022-03-11.txt"};
 
@@ -134,8 +140,8 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
               //          start
               startNode = findNearest(point);
               qDebug() << "Selected node: " << startNode;
-               startItem = new house(Qt::red, graph.vertices[startNode].xView_-radius, iheight-graph.vertices[startNode].yView_-radius, 2*radius+1, 1);
-               startItem->setPos(QPointF(graph.vertices[startNode].xView_-radius, iheight-graph.vertices[startNode].yView_-radius));
+               startItem = new house(Qt::red, graph.vertices[startNode].xView_, iheight-graph.vertices[startNode].yView_, nodeRadius, graph.vertices[startNode].uid_);
+//               startItem->setPos(QPointF(graph.vertices[startNode].xView_, iheight-graph.vertices[startNode].yView_));
                scene->addItem(startItem);
 
                coords = new QGraphicsTextItem("Start Point = "+QString::number(startNode));
@@ -158,8 +164,8 @@ bool MainWindow::eventFilter(QObject *obj, QEvent *event)
               //          start
                endNode = findNearest(point);
                qDebug() << "Selected node: " << endNode;
-               endItem = new house(Qt::green, graph.vertices[endNode].xView_-radius, iheight-graph.vertices[endNode].yView_-radius, 2*radius+1, 1);
-               endItem->setPos(QPointF(graph.vertices[endNode].xView_-radius, iheight-graph.vertices[endNode].yView_-radius));
+               endItem = new house(Qt::green, graph.vertices[endNode].xView_, iheight-graph.vertices[endNode].yView_, nodeRadius, graph.vertices[startNode].uid_);
+//               endItem->setPos(QPointF(graph.vertices[endNode].xView_-radius, iheight-graph.vertices[endNode].yView_-radius));
                scene->addItem(endItem);
 
                coords->setPlainText(coords->toPlainText()+", End Point = "+QString::number(endNode));
@@ -227,7 +233,10 @@ void MainWindow::populateScene(int algo){
     qDebug() << "X diff: "<< xdiff;
     qDebug() << "Y diff: "<< ydiff;
 
-    QImage image(((2*margin)+(ydiff*thres)), ((2*margin)+(xdiff*thres)), QImage::Format_RGB32);
+    int imageSize = 50000;
+
+//    QImage image(((2*margin)+(ydiff*thres)), ((2*margin)+(xdiff*thres)), QImage::Format_RGB32);
+    QImage image(imageSize,imageSize, QImage::Format_RGB32);
     image.fill(Qt::black);
 
     QColor gold(255, 215, 0);
@@ -248,22 +257,53 @@ void MainWindow::populateScene(int algo){
         v.xView_ = project2map(v.long_, minLon, thres)+margin;
         v.yView_  = project2map(v.lat_ , minLat, thres)+margin;
 
-        if(v.xView_ - radius >= 0 && v.xView_ - radius < image.width() && v.yView_ - radius >= 0 && v.yView_ - radius < image.height()) {
-            QGraphicsItem *item = new house(gold, v.xView_-radius, iheight-v.yView_-radius, 2*radius+1, v.uid_);
-            item->setPos(QPointF(v.xView_-radius, iheight-v.yView_-radius));
-            scene->addItem(item);
-            scene->update();
-        }
+//        if(v.xView_ - radius >= 0 && v.xView_ - radius < image.width() && v.yView_ - radius >= 0 && v.yView_ - radius < image.height()) {
+//            QGraphicsItem *item = new house(gold, v.xView_-radius, iheight-v.yView_-radius, 2*radius+1, v.uid_);
+//            item->setPos(QPointF(v.xView_-radius, iheight-v.yView_-radius));
+//            scene->addItem(item);
+//            scene->update();
+//        }
     }
 
+
+    for (auto& [id, v] : graph.vertices) {
+//        v.xView_ = project2map(v.long_, minLon, thres)+margin;
+//        v.yView_  = project2map(v.lat_ , minLat, thres)+margin;
+
+
+//        if(v.x_ - radius >= 0 && v.x_ - radius < image.width() && v.yView_ - radius >= 0 && v.yView_ - radius < image.height()) {
+        double x = (v.x_ + coordinateOffset) * 2;
+        double y = (v.y_ + coordinateOffset) * 2;
+        v.xView_ = x;
+        v.yView_ = y;
+            QGraphicsItem *item = new house(gold, x, iheight-y, nodeRadius, v.uid_);
+//            item->setPos(QPointF(x, iheight-y));
+            scene->addItem(item);
+//            scene->update();
+//        }
+    }
+
+//    for (auto& [id, e] : graph.edgeLookUp) {
+//           int src = e.fromID_;
+//           int dest = e.toID_;
+//           painter.drawLine(graph.vertices[src].xView_, iheight-graph.vertices[src].yView_, graph.vertices[dest].xView_, iheight-graph.vertices[dest].yView_);
+//       }
+//    pen.setBrush(red);
+    pen.setWidth(5);
+    painter.setPen(pen);
     for (auto& [id, e] : graph.edgeLookUp) {
-           int src = e.fromID_;
-           int dest = e.toID_;
-           painter.drawLine(graph.vertices[src].xView_, iheight-graph.vertices[src].yView_, graph.vertices[dest].xView_, iheight-graph.vertices[dest].yView_);
-       }
+               int src = e.fromID_;
+               int dest = e.toID_;
+               double xs = (graph.vertices[src].x_         + coordinateOffset)   *2    ;
+               double ys = (graph.vertices[src].y_         + coordinateOffset)   *2    ;
+               double xt = (graph.vertices[dest].x_        + coordinateOffset)   *2    ;
+               double yt = (graph.vertices[dest].y_        + coordinateOffset)   *2    ;
+
+               painter.drawLine(xs, iheight-ys, xt, iheight-yt);
+           }
 
     QPen epen(green, 7);
-    radius = radius*1.4;
+
     std::vector<std::pair<int, double>> path;
     auto start = std::chrono::high_resolution_clock::now();
     if(algo == 1){
@@ -278,8 +318,8 @@ void MainWindow::populateScene(int algo){
 
     if (algo != 0){
         for(auto v: graph.currentlyVisitedVertices){
-            QGraphicsItem *item = new house(neonBlue, graph.vertices[v].xView_-radius, iheight-graph.vertices[v].yView_-radius, 2*radius+1, v);
-            item->setPos(QPointF(graph.vertices[v].xView_-radius, iheight-graph.vertices[v].yView_-radius));
+            QGraphicsItem *item = new house(neonBlue, graph.vertices[v].xView_, iheight-graph.vertices[v].yView_, nodeRadius, v);
+//            item->setPos(QPointF(graph.vertices[v].xView_-radius, iheight-graph.vertices[v].yView_-radius));
             scene->addItem(item);
         }
         Vertex edgefrom = graph.vertices[startNode];
@@ -288,12 +328,12 @@ void MainWindow::populateScene(int algo){
         for (auto & element : path) {
             auto id = graph.vertices[element.first];
 
-            QGraphicsItem *item = new house(red, graph.vertices[element.first].xView_-radius, iheight-graph.vertices[element.first].yView_-radius, 2*radius+1, element.first);
-            item->setPos(QPointF(graph.vertices[element.first].xView_-radius, iheight-graph.vertices[element.first].yView_-radius));
+            QGraphicsItem *item = new house(red, graph.vertices[element.first].xView_, iheight-graph.vertices[element.first].yView_, nodeRadius, element.first);
+//            item->setPos(QPointF(graph.vertices[element.first].xView_-radius, iheight-graph.vertices[element.first].yView_-radius));
             scene->addItem(item);
             edgeto = graph.vertices[element.first];
             painter.drawLine(edgefrom.xView_, iheight-edgefrom.yView_, edgeto.xView_, iheight-edgeto.yView_);
-            scene->update();
+//            scene->update();
             edgefrom = edgeto;
         }
 
@@ -312,9 +352,9 @@ void MainWindow::populateScene(int algo){
 
     qDebug() << "Info: image calculated in: " << duration.count() << " us.";
 
-    radius = thres/10;
 
     painter.end();
+    scene->update();
 
     QPixmap pixmap = QPixmap::fromImage(image);
     QGraphicsPixmapItem *pixmapItem = scene->addPixmap(pixmap);
